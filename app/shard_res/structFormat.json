@@ -1,0 +1,38 @@
+{
+  "BaseMessage": {
+    "inherit": null,
+    "encrypted": {
+      "type": "AES",
+      "format": [
+        {
+          "name": "length",
+          "type": "I"
+        },
+        {
+          "name": "messageType",
+          "type": "H"
+        },
+        {
+          "name": "fromH",
+          "type": "q"
+        },
+        {
+          "name": "fromL",
+          "type": "q"
+        },
+        {
+          "name": "toH",
+          "type": "q"
+        },
+        {
+          "name": "toL",
+          "type": "q"
+        },
+        {
+          "name": "time",
+          "type": "q"
+        }
+      ]
+    }
+  }
+}
