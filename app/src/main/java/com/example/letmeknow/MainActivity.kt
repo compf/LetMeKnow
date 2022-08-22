@@ -16,6 +16,7 @@ import com.google.android.material.snackbar.Snackbar
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -32,8 +33,8 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         var datagramSocket:DatagramSocket=DatagramSocket()
         var msg=UserMessage(1)
-        msg.from=1
-        msg.to=0
+        msg.from= UUID(0,1)
+        msg.to=UUID(0,0)
         val data=msg.serialize()
         val policy = ThreadPolicy.Builder().permitAll().build()
 

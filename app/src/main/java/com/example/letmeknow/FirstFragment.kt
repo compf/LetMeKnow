@@ -10,6 +10,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.letmeknow.databinding.FragmentFirstBinding
 import com.example.letmeknow.messages.BaseMessage
 import com.example.letmeknow.messages.UserMessage
+import java.util.*
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -46,8 +47,8 @@ class FirstFragment : Fragment() {
 
         binding.buttonFirst.setOnClickListener {
             val msg=UserMessage(30)
-            msg.from=1
-            msg.to=0
+            msg.from= UUID(0,1);
+            msg.to=UUID(0,0)
             messageHandler.offerMessage(msg)
             while(!messageHandler.Sucess){
                 Toast.makeText(view.context.applicationContext, "Data saved", Toast.LENGTH_LONG).show();

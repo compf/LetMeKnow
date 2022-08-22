@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<block mode="plain" id="wholeMessage" lengthType="I" hashType="SHA-256">
+    <single id="messageType" type="H"/>
+    <single id="fromH" type="Q"/>
+    <single id="fromL" type="Q"/>
+    <single id="toH" type="Q"/>
+    <single id="toL" type="Q"/>
+    <block id="messageBlock" mode="AES/CBC/PKCS5Padding" keyId="CLIENT_CLIENT" lengthType="I" >
+        <single id="time" type="Q"/>
+        <single id="messageId" type="H"/>
+    </block>
+</block>

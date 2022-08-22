@@ -28,7 +28,7 @@ class ExampleUnitTest {
         assertEquals("Not equal","test",unpacked3)
     }
     var called=false
-    @Test
+
     fun testSendReceivePingMessage(){
         val ping=PingMessage();
 
