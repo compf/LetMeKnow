@@ -9,6 +9,58 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MyStruct {
+    public static  Object castPrimitive(Object value,Class targetType){
+        Class myType=value.getClass();
+        if(myType==Byte.class){
+            byte converted=(byte)value;
+            if(targetType==Short.class){
+                return (short)converted;
+            }
+            else if(targetType==Integer.class){
+                return (int)converted;
+            }
+            else if(targetType==Long.class){
+                return (long)converted;
+            }
+        }
+        else if(myType==Short.class){
+            short converted=(short)value;
+            if(targetType==Byte.class){
+                return (byte)converted;
+            }
+            else if(targetType==Integer.class){
+                return (int)converted;
+            }
+            else if(targetType==Long.class){
+                return (long)converted;
+            }
+        }
+        else if(myType==Integer.class){
+            int converted=(int)value;
+            if(targetType==Byte.class){
+                return (byte)converted;
+            }
+            else if(targetType==Short.class){
+                return (short)converted;
+            }
+            else if(targetType==Long.class){
+                return (long)converted;
+            }
+        }
+        else if(myType==Long.class){
+            long converted=(int)value;
+            if(targetType==Byte.class){
+                return (byte)converted;
+            }
+            else if(targetType==Short.class){
+                return (short)converted;
+            }
+            else if(targetType==Integer.class){
+                return (int)converted;
+            }
+        }
+        return value;
+    }
     private static class FormatString {
         private static final String ENDIAN_PREFIX_REGEX = "^[!@<>=]";
         private static final char DEFAULT_ENDIAN_PREFIX = '@';
@@ -168,7 +220,7 @@ public class MyStruct {
 
         public byte[] serialize(Object obj) {
             if (obj.getClass() != getDataType()) {
-                obj = getDataType().cast(obj);
+                obj = castPrimitive(obj,getDataType());
             }
             if (obj instanceof Byte) {
                 return new byte[]{(byte) obj};
@@ -307,11 +359,13 @@ public class MyStruct {
         return result;
 
     }
-
     public static Object[] unpack(String frmString, byte[] array) {
+        return unpack(frmString,array,0);
+    }
+
+    public static Object[] unpack(String frmString, byte[] array,int offset) {
         FormatString formatStringParsed = FormatString.parse(frmString);
         Object[] result = new Object[formatStringParsed.parts.size()];
-        int offset = 0;
         for (int i = 0; i < formatStringParsed.parts.size(); i++) {
             FormatStringPart part = formatStringParsed.parts.get(i);
             Object obj = part.deserialize(array, offset);

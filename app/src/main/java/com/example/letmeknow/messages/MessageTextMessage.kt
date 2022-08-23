@@ -1,15 +1,31 @@
 package com.example.letmeknow.messages
 
-class MessageTextMessage(var msgId:Short,var msg:String):BaseMessage() {
+class MessageTextMessage(var text:String):UserMessage() {
     override fun getFields(): Array<Any> {
-        return  arrayOf(msg.length,msg)
+        return  arrayOf(text.length,text)
     }
 
     override fun applyFields(objects: Array<Any>) {
-        msg=objects[1].toString()
+        text=objects[1].toString()
+    }
+
+    override fun getValue(name: String): Any {
+        return when(name){
+            "text"->text
+            else ->super.getValue(name)
+
+        }
+    }
+
+    override fun setValue(id: String, newValue: Any) {
+         when(id){
+            "text"->text=newValue.toString()
+            else ->super.setValue(id, newValue)
+
+        }
     }
 
     override fun getFormatString(): String {
-        return "h${msg.length}s"
+        return "h${text.length}s"
     }
 }

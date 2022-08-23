@@ -38,7 +38,7 @@ public  abstract class BaseMessage (public var from:UUID=UUID.randomUUID() , pub
 
     override fun getValue(name: String): Any {
        return when(name){
-           "messageTyp"->MessageClassManager.getId(this::class)
+           "messageType"->MessageClassManager.getId(this::class)
            "fromH"->from.mostSignificantBits
            "fromL"->from.leastSignificantBits
            "toH"->to.mostSignificantBits
@@ -50,7 +50,7 @@ public  abstract class BaseMessage (public var from:UUID=UUID.randomUUID() , pub
     }
     override fun setValue(name: String,value:Any): Unit {
          when(name){
-            "messageTyp"->{}
+            "messageType"->{}
             "fromH"->from=UUID(value as Long,from.leastSignificantBits)
             "fromL"->from=UUID(from.mostSignificantBits,value as Long)
              "toH"->to=UUID(value as Long,to.leastSignificantBits)
