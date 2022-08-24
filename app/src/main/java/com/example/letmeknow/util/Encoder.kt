@@ -71,8 +71,9 @@ class Encoder() {
             val ele=root.childNodes.item(i) as Element
             if(ele.tagName=="single"){
                 mapper.setValue(ele.getAttribute("id"),objects[counter])
+                counter+=1
             }
-            counter+=1
+
         }
         currOffset=offset+MyStruct.getDataSize(formatString)
         if(root.getElementsByTagName("block").length>0) {
