@@ -13,7 +13,8 @@ def convert_to_bytes(mapper:dict,class_name:str,key_provider:KeyProvider)->bytea
     with open(BASE_PATH+class_name+".xml") as f:
         doc=parse(f)
         root=doc.documentElement
-    return convert_to_bytes_rec(mapper,root,key_provider)
+        prefix=root.getAttribute("typePrefix") if root.hasAttribute("typePrefix") else ""
+    return convert_to_bytes_rec(mapper,root,key_provider,prefix)
 def get_encryption_agorithm(args,key,iv):
     return (algorithms.AES(key),modes.CBC(iv),padding.PKCS7(128).padder())
 def decrypt(array,iv,key_provider,mode,key_id,mapper):
@@ -49,12 +50,10 @@ def hash(array,alg):
     return lib.digest()
 def get_hash_size(mode):
     return 32
-def convert_to_bytes_rec(mapper,root,key_provider):
+def convert_to_bytes_rec(mapper,root,key_provider,prefix:str):
     objects=[]
     result=bytearray()
-    format_string=""
-    if root.hasAttribute("typePrefix"):
-        format_string=root.getAttribute("typePrefix")
+    format_string=prefix
     for ele in root.childNodes:
         if ele.nodeType==Node.ELEMENT_NODE:
             if ele.tagName=="single":
@@ -63,7 +62,7 @@ def convert_to_bytes_rec(mapper,root,key_provider):
     result+=struct.pack(format_string,*objects)
     if len(root.getElementsByTagName("block"))>0:
         ele=root.getElementsByTagName("block")[0]
-        block_bytearray=convert_to_bytes_rec(mapper,ele,key_provider)
+        block_bytearray=convert_to_bytes_rec(mapper,ele,key_provider,prefix)
         size_type=ele.getAttribute("sizeType")
         if ele.getAttribute("mode")!="plain":
             encrypted=encrypt(block_bytearray,key_provider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
@@ -82,18 +81,15 @@ def convert_to_message(array:bytearray,class_name:str,key_provider:KeyProvider)-
         doc=parse(f)
         mapper=dict()
         root=doc.documentElement
-    convert_to_message_rec(array,0,key_provider,mapper,root)
+        prefix=root.getAttribute("typePrefix") if root.hasAttribute("typePrefix") else ""
+    convert_to_message_rec(array,0,key_provider,mapper,root,prefix)
     return mapper
-def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,mapper:dict,root:Element):
+def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,mapper:dict,root:Element,prefix:str):
     curr_offset=offset
-    format_string=""
-    if root.hasAttribute("typePrefix"):
-        format_string=root.getAttribute("typePrefix")
+    format_string=prefix
     for n in root.childNodes:
         if n.nodeType==Node.ELEMENT_NODE and n.tagName=="single":
             format_string+=n.getAttribute("type")
-    tmp=array[offset:offset+struct.calcsize(format_string)]
-    l=len(tmp)
     objects=struct.unpack(format_string,array[offset:offset+struct.calcsize(format_string)])
     counter=0
     for n in root.childNodes:
@@ -123,4 +119,4 @@ def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,m
             curr_offset-=len(block_bytearray)
             block_bytearray=decrypt(block_bytearray,iv,key_provider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
             array[curr_offset:curr_offset+len(block_bytearray)]=block_bytearray
-        convert_to_message_rec(array,curr_offset,key_provider,mapper,ele)
+        convert_to_message_rec(array,curr_offset,key_provider,mapper,ele,prefix)
