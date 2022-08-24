@@ -57,6 +57,9 @@ class Encoder() {
         var currOffset=offset
         var result=ByteArray(0)
         var formatString=""
+        if(root.hasAttribute("typePrefix")){
+            formatString=root.getAttribute("typePrefix");
+        }
         for(i in 0..root.childNodes.length){
             if(!(root.childNodes.item(i) is  Element))continue
             val ele=root.childNodes.item(i) as Element
@@ -146,6 +149,9 @@ class Encoder() {
         val objectList= mutableListOf<Any>()
         var result=ByteArray(0)
         var formatString=""
+        if(root.hasAttribute("typePrefix")){
+            formatString=root.getAttribute("typePrefix");
+        }
         for(i in 0..root.childNodes.length){
             if(!(root.childNodes.item(i) is  Element))continue
             val ele=root.childNodes.item(i) as Element

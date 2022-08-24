@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<block mode="plain" id="wholeMessage" sizeType="I" hashType="SHA-256" messageType="UserMesssage">
+<block mode="plain" id="wholeMessage" sizeType="I" hashType="SHA-256" messageType="UserMesssage" typePrefix="&lt;">
     <single id="messageType" type="H"/>
     <single id="fromH" type="Q"/>
     <single id="fromL" type="Q"/>

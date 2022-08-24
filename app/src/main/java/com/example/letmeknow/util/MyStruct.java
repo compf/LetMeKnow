@@ -218,7 +218,8 @@ public class MyStruct {
             return dataType;
         }
 
-        public byte[] serialize(Object obj) {
+        public byte[] serialize(Object obj,boolean isLittleEndian) {
+            ByteOrder order=isLittleEndian?ByteOrder.LITTLE_ENDIAN:ByteOrder.BIG_ENDIAN;
             if (obj.getClass() != getDataType()) {
                 obj = castPrimitive(obj,getDataType());
             }
@@ -229,22 +230,27 @@ public class MyStruct {
                 return new byte[]{bo ? (byte) 1 : (byte) 0};
             } else if (obj instanceof Short) {
                 ByteBuffer buffer = ByteBuffer.allocate(SHORT_BYTES);
+                buffer.order(order);
                 buffer.putShort((short) obj);
                 return  buffer.array();
             } else if (obj instanceof Integer) {
                 ByteBuffer buffer = ByteBuffer.allocate(INT_BYTES);
+                buffer.order(order);
                 buffer.putInt((int) obj);
                 return  buffer.array();
             } else if (obj instanceof Long) {
                 ByteBuffer buffer = ByteBuffer.allocate(LONG_BYTES);
+                buffer.order(order);
                 buffer.putLong((long) obj);
                 return buffer.array();
             } else if (obj instanceof Float ) {
                 ByteBuffer buffer = ByteBuffer.allocate(FLOAT_BYTES);
+                buffer.order(order);
                 buffer.putFloat((float) obj);
                 return  buffer.array();
             } else if (obj instanceof Double) {
                 ByteBuffer buffer = ByteBuffer.allocate(DOUBLE_BYTES);
+                buffer.order(order);
                 buffer.putDouble((double) obj);
                 return  buffer.array();
             } else if (obj instanceof Character) {
@@ -269,30 +275,36 @@ public class MyStruct {
 
         }
 
-        public Object deserialize(byte[] array, int offset) {
+        public Object deserialize(byte[] array, int offset,boolean isLittleEndian) {
+            ByteOrder order=isLittleEndian ? ByteOrder.LITTLE_ENDIAN:ByteOrder.BIG_ENDIAN;
             if (getDataType() == Byte.class) {
                 return array[offset];
             } else if (getDataType() == boolean.class) {
                 return array[offset] == 1;
             } else if (getDataType() == Short.class) {
                 ByteBuffer buffer = ByteBuffer.wrap(array, offset, SHORT_BYTES);
+                buffer.order(order);
                 return buffer.getShort();
             } else if (getDataType() == Integer.class) {
                 ByteBuffer buffer = ByteBuffer.wrap(array, offset, INT_BYTES);
+                buffer.order(order);
                 return buffer.getInt();
             } else if (getDataType() == Long.class)
             {
                 ByteBuffer buffer=ByteBuffer.wrap(array,offset,LONG_BYTES);
+                buffer.order(order);
                 return buffer.getLong();
             }
                else if (getDataType()==Float.class)
             {
                 ByteBuffer buffer=ByteBuffer.wrap(array,offset,FLOAT_BYTES);
+                buffer.order(order);
                 return buffer.getFloat();
             }
                 else if (getDataType()==Double.class)
             {
                 ByteBuffer buffer=ByteBuffer.wrap(array,offset,DOUBLE_BYTES);
+                buffer.order(order);
                 return buffer.getDouble();
             }
                 else if (getDataType()==char.class)
@@ -320,14 +332,14 @@ public class MyStruct {
         }
 
         @Override
-        public byte[] serialize(Object obj) {
+        public byte[] serialize(Object obj,boolean isLittleEndian) {
 
             return obj.toString().getBytes(StandardCharsets.UTF_8);
 
         }
 
         @Override
-        public Object deserialize(byte[] array, int offset) {
+        public Object deserialize(byte[] array, int offset,boolean isLittleEndian) {
 
             return new String(array, offset, getLength(), StandardCharsets.UTF_8);
 
@@ -352,7 +364,7 @@ public class MyStruct {
         for (int i = 0; i < data.length; i++) {
             FormatStringPart part = formatStringParsed.parts.get(i);
 
-            System.arraycopy(part.serialize(data[i]),0,result,offset,part.getSize());
+            System.arraycopy(part.serialize(data[i],formatStringParsed.isLittleEndian),0,result,offset,part.getSize());
             offset += part.getSize();
         }
 
@@ -368,7 +380,7 @@ public class MyStruct {
         Object[] result = new Object[formatStringParsed.parts.size()];
         for (int i = 0; i < formatStringParsed.parts.size(); i++) {
             FormatStringPart part = formatStringParsed.parts.get(i);
-            Object obj = part.deserialize(array, offset);
+            Object obj = part.deserialize(array, offset, formatStringParsed.isLittleEndian);
             result[i] = obj;
             offset += part.getSize();
         }
