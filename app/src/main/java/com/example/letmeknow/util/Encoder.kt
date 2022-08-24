@@ -32,15 +32,16 @@ class Encoder() {
       val builderFactory=DocumentBuilderFactory.newInstance()
         val builder=builderFactory.newDocumentBuilder()
         val doc=context.assets.open(className+".xml").use { builder.parse(it) }
-        return convertToBytesRec(msg,keyProvider,doc.documentElement)
+        var prefix= if (doc.documentElement.hasAttribute("typePrefix"))  doc.documentElement.getAttribute("typePrefix") else ""
+        return convertToBytesRec(msg,keyProvider,doc.documentElement,prefix)
     }
     public fun convertToMessage(bytes:ByteArray,context:Context,className: String,keyProvider: KeyProvider):BaseMessage{
         val builderFactory=DocumentBuilderFactory.newInstance()
         val builder=builderFactory.newDocumentBuilder()
         val doc=context.assets.open(className+".xml").use { builder.parse(it) }
         val mapper=TempValueMapper()
-
-         convertToMessageRec(bytes,doc.documentElement,0,mapper,keyProvider)
+        var prefix= if (doc.documentElement.hasAttribute("typePrefix"))  doc.documentElement.getAttribute("typePrefix") else ""
+         convertToMessageRec(bytes,doc.documentElement,0,mapper,keyProvider,prefix)
         val msg=MessageClassManager.newInstance(mapper.getValue("messageType") as Short)
         for(key in mapper.map.keys){
             msg.setValue(key,mapper.getValue(key))
@@ -53,13 +54,10 @@ class Encoder() {
     private fun getHashSize(hashType:String):Int{
         return hashType.split("-")[1].toInt()/8
     }
-    private fun convertToMessageRec(bytes:ByteArray,root:Element,offset:Int,mapper:KeyValueMapper,keyProvider:KeyProvider){
+    private fun convertToMessageRec(bytes:ByteArray,root:Element,offset:Int,mapper:KeyValueMapper,keyProvider:KeyProvider,prefix:String){
         var currOffset=offset
         var result=ByteArray(0)
-        var formatString=""
-        if(root.hasAttribute("typePrefix")){
-            formatString=root.getAttribute("typePrefix");
-        }
+        var formatString=prefix
         for(i in 0..root.childNodes.length){
             if(!(root.childNodes.item(i) is  Element))continue
             val ele=root.childNodes.item(i) as Element
@@ -114,7 +112,7 @@ class Encoder() {
                 blockBytes.copyInto(bytes,currOffset-blockBytes.size,0,blockBytes.size)
                 currOffset-=blockBytes.size
             }
-            convertToMessageRec(bytes,ele,currOffset,mapper,keyProvider)
+            convertToMessageRec(bytes,ele,currOffset,mapper,keyProvider,prefix)
 
 
         }
@@ -145,15 +143,12 @@ class Encoder() {
     private fun hash(bytes:ByteArray,hashType:String):ByteArray{
         return MessageDigest.getInstance(hashType).digest(bytes)
     }
-    private fun convertToBytesRec(mapper:KeyValueMapper,keyProvider:KeyProvider,root:Element):ByteArray{
+    private fun convertToBytesRec(mapper:KeyValueMapper,keyProvider:KeyProvider,root:Element,prefix:String):ByteArray{
         val objectList= mutableListOf<Any>()
         var result=ByteArray(0)
-        var formatString=""
-        if(root.hasAttribute("typePrefix")){
-            formatString=root.getAttribute("typePrefix");
-        }
+        var formatString=prefix
         for(i in 0..root.childNodes.length){
-            if(!(root.childNodes.item(i) is  Element))continue
+            if(root.childNodes.item(i) !is Element)continue
             val ele=root.childNodes.item(i) as Element
             if(ele.tagName=="single"){
                 formatString+=ele.getAttribute("type")
@@ -166,7 +161,7 @@ class Encoder() {
         }
         if(root.getElementsByTagName("block").length>0) {
             val ele = root.getElementsByTagName("block").item(0) as Element
-            var blockBytes = convertToBytesRec(mapper, keyProvider, ele)
+            var blockBytes = convertToBytesRec(mapper, keyProvider, ele,prefix)
             val sizeType=ele.getAttribute("sizeType")
             if(ele.getAttribute("mode")!="plain"){
                 val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
