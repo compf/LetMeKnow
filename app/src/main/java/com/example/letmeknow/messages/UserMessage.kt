@@ -23,6 +23,10 @@ public open class UserMessage(var msgId:Short=0) : BaseMessage(){
         }
     }
 
+    override fun getKeys(): Set<String> {
+        return setOf("mesageId")
+    }
+
     override fun getFormatString(): String {
         return "h"
     }

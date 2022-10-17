@@ -18,15 +18,15 @@ import javax.xml.parsers.DocumentBuilderFactory
 class Encoder() {
     public val TRANSFOMRMATION_STRING = "AES/CBC/PKCS5Padding";
 
-    private class TempValueMapper:KeyValueMapper{
-        public val map= mutableMapOf<String,Any>()
-        override fun getValue(name: String): Any {
-            return map.get(name)!!
-        }
-
-        override fun setValue(name: String, value: Any) {
-            map.set(name,value)
-        }
+    private class AuthenticationInfoMapper:RecursiveKeyValueMapper{
+       private val keyProvider:KeyProvider
+        constructor( keyProvider: KeyProvider,child:KeyValueMapper):super(child){
+           this.keyProvider=keyProvider
+            val password="password";
+            child.setValue(password,keyProvider.getKey(password))
+            val encryptionKey="encryptionKey"
+            child.setValue(encryptionKey,keyProvider.getKey(encryptionKey))
+       }
     }
     public fun convertToBytes(msg:BaseMessage, context: Context, className: String,keyProvider: KeyProvider): ByteArray {
       val builderFactory=DocumentBuilderFactory.newInstance()
@@ -38,11 +38,11 @@ class Encoder() {
         val builderFactory=DocumentBuilderFactory.newInstance()
         val builder=builderFactory.newDocumentBuilder()
         val doc=context.assets.open(className+".xml").use { builder.parse(it) }
-        val mapper=TempValueMapper()
+        val mapper=AuthenticationInfoMapper(keyProvider,RecursiveKeyValueMapper(StubKeyValueMapper()))
 
          convertToMessageRec(bytes,doc.documentElement,0,mapper,keyProvider)
         val msg=MessageClassManager.newInstance(mapper.getValue("messageType") as Short)
-        for(key in mapper.map.keys){
+        for(key in mapper.getKeys()){
             msg.setValue(key,mapper.getValue(key))
         }
         return msg
@@ -110,7 +110,7 @@ class Encoder() {
 1
             if(ele.getAttribute("mode")!="plain"){
                 val encryptedData=EncryptedData(IvParameterSpec(iv),blockBytes)
-                blockBytes=decrypt(encryptedData,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper )
+                blockBytes=decrypt(encryptedData,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId") )
                 blockBytes.copyInto(bytes,currOffset-blockBytes.size,0,blockBytes.size)
                 currOffset-=blockBytes.size
             }
@@ -127,17 +127,17 @@ class Encoder() {
     private class EncryptedData(public val IV: IvParameterSpec,public val data: ByteArray){
 
     }
-    private fun encrypt(bytes:ByteArray,keyProvider:KeyProvider,mode:String,keyId:String,mapper: KeyValueMapper):EncryptedData{
+    private fun encrypt(bytes:ByteArray,keyProvider:KeyProvider,mode:String,keyId:String):EncryptedData{
         val cipher = Cipher.getInstance(mode)
-        val key=keyProvider.getKey(keyId,mapper )
+        val key=keyProvider.getKey(keyId )
         val iv=generateIv()
         cipher.init(Cipher.ENCRYPT_MODE, key,iv)
         val encrypted = cipher.doFinal(bytes)
         return EncryptedData(iv,encrypted)
     }
-    private  fun decrypt(encryptedData: EncryptedData,keyProvider: KeyProvider,mode:String,keyId:String,mapper: KeyValueMapper):ByteArray{
+    private  fun decrypt(encryptedData: EncryptedData,keyProvider: KeyProvider,mode:String,keyId:String):ByteArray{
         val cipher = Cipher.getInstance(mode)
-        val key=keyProvider.getKey(keyId,mapper )
+        val key=keyProvider.getKey(keyId )
         val iv=encryptedData.IV
         cipher.init(Cipher.DECRYPT_MODE,key,iv)
         return cipher.doFinal(encryptedData.data)
@@ -169,7 +169,7 @@ class Encoder() {
             var blockBytes = convertToBytesRec(mapper, keyProvider, ele)
             val sizeType=ele.getAttribute("sizeType")
             if(ele.getAttribute("mode")!="plain"){
-                val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
+                val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"))
                 blockBytes=encryptedData.data
                 result+=encryptedData.IV.iv
             }

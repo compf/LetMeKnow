@@ -48,6 +48,11 @@ public  abstract class BaseMessage (public var from:UUID=UUID.randomUUID() , pub
        }
 
     }
+
+    override fun getKeys(): Set<String> {
+        return setOf("messageType","fromH","fromL","toH","toL","time")
+    }
+
     override fun setValue(name: String,value:Any): Unit {
          when(name){
             "messageType"->{}

@@ -24,7 +24,7 @@ import javax.crypto.spec.SecretKeySpec
 @RunWith(AndroidJUnit4::class)
 public class ExampleInstrumentedTest {
     class StubKeyProvider:KeyProvider{
-        override fun getKey(keyId: String, mapper: KeyValueMapper): SecretKey {
+        override fun getKey(keyId: String): SecretKey {
             return SecretKeySpec(arrayOf<Byte>(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15).toByteArray(),"AES")
         }
 
@@ -46,6 +46,7 @@ public class ExampleInstrumentedTest {
         assertEquals(convMessage.to,msg.to)
         assertEquals(convMessage.time,msg.time)
         assertEquals((convMessage as UserMessage).msgId,(msg as UserMessage).msgId)
+        assertNotEquals(convMessage,msg)
 
 
     }
