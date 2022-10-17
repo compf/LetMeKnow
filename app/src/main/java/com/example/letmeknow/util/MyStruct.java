@@ -3,6 +3,7 @@ package com.example.letmeknow.util;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.regex.*;
 
 import java.util.ArrayList;
@@ -170,8 +171,8 @@ public class MyStruct {
         }
 
         private static void addFormatStringPart(FormatString frmString, char formatCharacter, int length) {
-            if (formatCharacter == 's') {
-                frmString.parts.add(new LengthPrefixFormatStringPart(length));
+            if (formatCharacter == 's' || formatCharacter == 'b') {
+                frmString.parts.add(new LengthPrefixFormatStringPart(formatCharacter,length));
             } else {
                 for (int i = 0; i < length; i++) {
                     frmString.parts.add(new FormatStringPart(frmString.getTypeRep(formatCharacter)));
@@ -322,26 +323,33 @@ public class MyStruct {
 
     private static class LengthPrefixFormatStringPart extends FormatStringPart {
         private final int length;
+        private final char prefix;
 
-        public LengthPrefixFormatStringPart(int length) {
+        public LengthPrefixFormatStringPart(char prefix,int length) {
             super(String.class);
 
-
+            this.prefix=prefix;
             this.length = length;
 
         }
 
         @Override
         public byte[] serialize(Object obj,boolean isLittleEndian) {
-
-            return obj.toString().getBytes(StandardCharsets.UTF_8);
+            if (prefix=='s')
+                return obj.toString().getBytes(StandardCharsets.UTF_8);
+            else return (byte[])obj;
 
         }
 
         @Override
         public Object deserialize(byte[] array, int offset,boolean isLittleEndian) {
+            if(prefix=='s'){
+                return new String(array, offset, getLength(), StandardCharsets.UTF_8);
+            }
+            else{
+                return Arrays.copyOfRange(array,offset,offset+length);
+            }
 
-            return new String(array, offset, getLength(), StandardCharsets.UTF_8);
 
         }
 

@@ -24,7 +24,7 @@ public open class UserMessage(var msgId:Short=0) : BaseMessage(){
     }
 
     override fun getKeys(): Set<String> {
-        return setOf("mesageId")
+        return setOf("messageId").union((super.getKeys()))
     }
 
     override fun getFormatString(): String {

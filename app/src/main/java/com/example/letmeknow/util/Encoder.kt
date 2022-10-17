@@ -12,6 +12,7 @@ import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import javax.xml.parsers.DocumentBuilderFactory
 
 
@@ -22,17 +23,16 @@ class Encoder() {
        private val keyProvider:KeyProvider
         constructor( keyProvider: KeyProvider,child:KeyValueMapper):super(child){
            this.keyProvider=keyProvider
-            val password="password";
-            child.setValue(password,keyProvider.getKey(password))
-            val encryptionKey="encryptionKey"
-            child.setValue(encryptionKey,keyProvider.getKey(encryptionKey))
+            this.setValue("authentication",keyProvider.getKey("password").encoded)
+
        }
     }
     public fun convertToBytes(msg:BaseMessage, context: Context, className: String,keyProvider: KeyProvider): ByteArray {
       val builderFactory=DocumentBuilderFactory.newInstance()
         val builder=builderFactory.newDocumentBuilder()
         val doc=context.assets.open(className+".xml").use { builder.parse(it) }
-        return convertToBytesRec(msg,keyProvider,doc.documentElement)
+        val mapper=AuthenticationInfoMapper(keyProvider,msg)
+        return convertToBytesRec(mapper,keyProvider,doc.documentElement)
     }
     public fun convertToMessage(bytes:ByteArray,context:Context,className: String,keyProvider: KeyProvider):BaseMessage{
         val builderFactory=DocumentBuilderFactory.newInstance()
