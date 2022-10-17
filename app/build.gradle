@@ -36,7 +36,7 @@ android {
     sourceSets {
         main {
             assets {
-                srcDirs 'src/main/assets', 'shard_res'
+                srcDirs 'src/main/assets', 'shared_res'
             }
         }
     }

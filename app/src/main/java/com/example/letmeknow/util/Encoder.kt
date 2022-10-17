@@ -12,38 +12,37 @@ import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import javax.xml.parsers.DocumentBuilderFactory
 
 
 class Encoder() {
     public val TRANSFOMRMATION_STRING = "AES/CBC/PKCS5Padding";
 
-    private class TempValueMapper:KeyValueMapper{
-        public val map= mutableMapOf<String,Any>()
-        override fun getValue(name: String): Any {
-            return map.get(name)!!
-        }
+    private class AuthenticationInfoMapper:RecursiveKeyValueMapper{
+        private val keyProvider:KeyProvider
+        constructor( keyProvider: KeyProvider,child:KeyValueMapper):super(child){
+            this.keyProvider=keyProvider
+            this.setValue("authentication",keyProvider.getKey("password").encoded)
 
-        override fun setValue(name: String, value: Any) {
-            map.set(name,value)
         }
     }
     public fun convertToBytes(msg:BaseMessage, context: Context, className: String,keyProvider: KeyProvider): ByteArray {
-      val builderFactory=DocumentBuilderFactory.newInstance()
+        val builderFactory=DocumentBuilderFactory.newInstance()
         val builder=builderFactory.newDocumentBuilder()
         val doc=context.assets.open(className+".xml").use { builder.parse(it) }
-        var prefix= if (doc.documentElement.hasAttribute("typePrefix"))  doc.documentElement.getAttribute("typePrefix") else ""
-        return convertToBytesRec(msg,keyProvider,doc.documentElement,prefix)
+        val mapper=AuthenticationInfoMapper(keyProvider,msg)
+        return convertToBytesRec(mapper,keyProvider,doc.documentElement)
     }
     public fun convertToMessage(bytes:ByteArray,context:Context,className: String,keyProvider: KeyProvider):BaseMessage{
         val builderFactory=DocumentBuilderFactory.newInstance()
         val builder=builderFactory.newDocumentBuilder()
         val doc=context.assets.open(className+".xml").use { builder.parse(it) }
-        val mapper=TempValueMapper()
-        var prefix= if (doc.documentElement.hasAttribute("typePrefix"))  doc.documentElement.getAttribute("typePrefix") else ""
-         convertToMessageRec(bytes,doc.documentElement,0,mapper,keyProvider,prefix)
+        val mapper=AuthenticationInfoMapper(keyProvider,RecursiveKeyValueMapper(StubKeyValueMapper()))
+
+        convertToMessageRec(bytes,doc.documentElement,0,mapper,keyProvider)
         val msg=MessageClassManager.newInstance(mapper.getValue("messageType") as Short)
-        for(key in mapper.map.keys){
+        for(key in mapper.getKeys()){
             msg.setValue(key,mapper.getValue(key))
         }
         return msg
@@ -54,10 +53,13 @@ class Encoder() {
     private fun getHashSize(hashType:String):Int{
         return hashType.split("-")[1].toInt()/8
     }
-    private fun convertToMessageRec(bytes:ByteArray,root:Element,offset:Int,mapper:KeyValueMapper,keyProvider:KeyProvider,prefix:String){
+    private fun convertToMessageRec(bytes:ByteArray,root:Element,offset:Int,mapper:KeyValueMapper,keyProvider:KeyProvider){
         var currOffset=offset
         var result=ByteArray(0)
-        var formatString=prefix
+        var formatString=""
+        if(root.hasAttribute("typePrefix")){
+            formatString=root.getAttribute("typePrefix");
+        }
         for(i in 0..root.childNodes.length){
             if(!(root.childNodes.item(i) is  Element))continue
             val ele=root.childNodes.item(i) as Element
@@ -105,14 +107,14 @@ class Encoder() {
 
             }
 
-1
+            1
             if(ele.getAttribute("mode")!="plain"){
                 val encryptedData=EncryptedData(IvParameterSpec(iv),blockBytes)
-                blockBytes=decrypt(encryptedData,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper )
+                blockBytes=decrypt(encryptedData,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId") )
                 blockBytes.copyInto(bytes,currOffset-blockBytes.size,0,blockBytes.size)
                 currOffset-=blockBytes.size
             }
-            convertToMessageRec(bytes,ele,currOffset,mapper,keyProvider,prefix)
+            convertToMessageRec(bytes,ele,currOffset,mapper,keyProvider)
 
 
         }
@@ -125,17 +127,17 @@ class Encoder() {
     private class EncryptedData(public val IV: IvParameterSpec,public val data: ByteArray){
 
     }
-    private fun encrypt(bytes:ByteArray,keyProvider:KeyProvider,mode:String,keyId:String,mapper: KeyValueMapper):EncryptedData{
+    private fun encrypt(bytes:ByteArray,keyProvider:KeyProvider,mode:String,keyId:String):EncryptedData{
         val cipher = Cipher.getInstance(mode)
-        val key=keyProvider.getKey(keyId,mapper )
+        val key=keyProvider.getKey(keyId )
         val iv=generateIv()
         cipher.init(Cipher.ENCRYPT_MODE, key,iv)
         val encrypted = cipher.doFinal(bytes)
         return EncryptedData(iv,encrypted)
     }
-    private  fun decrypt(encryptedData: EncryptedData,keyProvider: KeyProvider,mode:String,keyId:String,mapper: KeyValueMapper):ByteArray{
+    private  fun decrypt(encryptedData: EncryptedData,keyProvider: KeyProvider,mode:String,keyId:String):ByteArray{
         val cipher = Cipher.getInstance(mode)
-        val key=keyProvider.getKey(keyId,mapper )
+        val key=keyProvider.getKey(keyId )
         val iv=encryptedData.IV
         cipher.init(Cipher.DECRYPT_MODE,key,iv)
         return cipher.doFinal(encryptedData.data)
@@ -143,12 +145,15 @@ class Encoder() {
     private fun hash(bytes:ByteArray,hashType:String):ByteArray{
         return MessageDigest.getInstance(hashType).digest(bytes)
     }
-    private fun convertToBytesRec(mapper:KeyValueMapper,keyProvider:KeyProvider,root:Element,prefix:String):ByteArray{
+    private fun convertToBytesRec(mapper:KeyValueMapper,keyProvider:KeyProvider,root:Element):ByteArray{
         val objectList= mutableListOf<Any>()
         var result=ByteArray(0)
-        var formatString=prefix
+        var formatString=""
+        if(root.hasAttribute("typePrefix")){
+            formatString=root.getAttribute("typePrefix");
+        }
         for(i in 0..root.childNodes.length){
-            if(root.childNodes.item(i) !is Element)continue
+            if(!(root.childNodes.item(i) is  Element))continue
             val ele=root.childNodes.item(i) as Element
             if(ele.tagName=="single"){
                 formatString+=ele.getAttribute("type")
@@ -161,10 +166,10 @@ class Encoder() {
         }
         if(root.getElementsByTagName("block").length>0) {
             val ele = root.getElementsByTagName("block").item(0) as Element
-            var blockBytes = convertToBytesRec(mapper, keyProvider, ele,prefix)
+            var blockBytes = convertToBytesRec(mapper, keyProvider, ele)
             val sizeType=ele.getAttribute("sizeType")
             if(ele.getAttribute("mode")!="plain"){
-                val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
+                val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"))
                 blockBytes=encryptedData.data
                 result+=encryptedData.IV.iv
             }
