@@ -4,6 +4,7 @@ import android.widget.Toast
 import com.example.letmeknow.messages.AcknowledgementMessage
 import com.example.letmeknow.messages.BaseMessage
 import com.example.letmeknow.messages.MessageClassManager
+import com.example.letmeknow.util.Encoder
 import com.example.letmeknow.util.MyStruct
 import org.jetbrains.annotations.NotNull
 import java.net.DatagramPacket
@@ -41,7 +42,7 @@ class MessageHandler(val success: (msg:BaseMessage)->Unit, val failure: (msg:Bas
             }
             var successfullySent=false
             while(!successfullySent){
-                sendMessage(msg)
+                //sendMessage(msg)
                 successfullySent= waitReply(msg)
             }
             Sucess=true
@@ -50,11 +51,11 @@ class MessageHandler(val success: (msg:BaseMessage)->Unit, val failure: (msg:Bas
 
         }
     }
-    private fun sendMessage(@NotNull msg:BaseMessage){
-        val data=msg.serialize()
+    /*private fun sendMessage(@NotNull msg:BaseMessage){
+        val data=Encoder().convertToBytes(msg,)
         val datagramm=DatagramPacket(data,data.size,InetSocketAddress(HOST_IP,PORT))
         socket.send(datagramm)
-    }
+    }*/
     private fun receiveMessage():BaseMessage?{
         var buffer_size=4096
 

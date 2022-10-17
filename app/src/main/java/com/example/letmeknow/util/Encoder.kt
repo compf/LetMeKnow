@@ -110,7 +110,8 @@ class Encoder() {
             1
             if(ele.getAttribute("mode")!="plain"){
                 val encryptedData=EncryptedData(IvParameterSpec(iv),blockBytes)
-                blockBytes=decrypt(encryptedData,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId") )
+                val decryptId=getEncryptDecryptId(ele).second
+                blockBytes=decrypt(encryptedData,keyProvider,ele.getAttribute("mode"),decryptId )
                 blockBytes.copyInto(bytes,currOffset-blockBytes.size,0,blockBytes.size)
                 currOffset-=blockBytes.size
             }
@@ -145,6 +146,20 @@ class Encoder() {
     private fun hash(bytes:ByteArray,hashType:String):ByteArray{
         return MessageDigest.getInstance(hashType).digest(bytes)
     }
+    private fun getEncryptDecryptId(ele:Element):Pair<String,String>{
+        if(ele.hasAttribute("encryptKeyId") &&  ele.hasAttribute("decryptKeyId")){
+            return Pair(ele.getAttribute("encryptKeyId"),ele.getAttribute("decryptKeyId"));
+        }
+        else if(ele.hasAttribute("encryptKeyId") ){
+            return Pair(ele.getAttribute("encryptKeyId"),ele.getAttribute("encryptKeyId"));
+        }
+        else if(ele.hasAttribute("decryptKeyId")){
+            return Pair(ele.getAttribute("decryptKeyId"),ele.getAttribute("decryptKeyId"));
+        }
+        else {
+            throw IllegalStateException("Both encryption and decryption key are missing")
+        }
+    }
     private fun convertToBytesRec(mapper:KeyValueMapper,keyProvider:KeyProvider,root:Element):ByteArray{
         val objectList= mutableListOf<Any>()
         var result=ByteArray(0)
@@ -169,7 +184,8 @@ class Encoder() {
             var blockBytes = convertToBytesRec(mapper, keyProvider, ele)
             val sizeType=ele.getAttribute("sizeType")
             if(ele.getAttribute("mode")!="plain"){
-                val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),ele.getAttribute("keyId"))
+                val encryptId=getEncryptDecryptId(ele).first
+                val encryptedData=encrypt(blockBytes,keyProvider,ele.getAttribute("mode"),encryptId)
                 blockBytes=encryptedData.data
                 result+=encryptedData.IV.iv
             }

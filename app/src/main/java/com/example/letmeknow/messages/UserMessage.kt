@@ -3,13 +3,7 @@ package com.example.letmeknow.messages;
 import kotlin.reflect.typeOf
 
 public open class UserMessage(var msgId:Short=0) : BaseMessage(){
-    override fun getFields(): Array<Any> {
-        return arrayOf(msgId)
-    }
 
-    override fun applyFields(objects: Array<Any>) {
-        msgId=objects[0] as Short
-    }
     public override fun getValue(id:String):Any{
         return when(id){
             "messageId"->msgId
@@ -27,7 +21,4 @@ public open class UserMessage(var msgId:Short=0) : BaseMessage(){
         return setOf("messageId").union((super.getKeys()))
     }
 
-    override fun getFormatString(): String {
-        return "h"
-    }
 }

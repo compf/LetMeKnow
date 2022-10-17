@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         var msg=UserMessage(1)
         msg.from= UUID(0,1)
         msg.to=UUID(0,0)
-        val data=msg.serialize()
+
         val policy = ThreadPolicy.Builder().permitAll().build()
 
         StrictMode.setThreadPolicy(policy)
