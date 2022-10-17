@@ -335,22 +335,13 @@ public class MyStruct {
 
         @Override
         public byte[] serialize(Object obj,boolean isLittleEndian) {
-            if (prefix=='s')
-                return obj.toString().getBytes(StandardCharsets.UTF_8);
-            else return (byte[])obj;
-
+            byte[] bytes= obj.toString().getBytes(StandardCharsets.UTF_8);
+            return Arrays.copyOf(bytes,length);
         }
 
         @Override
         public Object deserialize(byte[] array, int offset,boolean isLittleEndian) {
-            if(prefix=='s'){
                 return new String(array, offset, getLength(), StandardCharsets.UTF_8);
-            }
-            else{
-                return Arrays.copyOfRange(array,offset,offset+length);
-            }
-
-
         }
 
         public int getLength() {

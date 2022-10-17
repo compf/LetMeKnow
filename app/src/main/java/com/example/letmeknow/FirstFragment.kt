@@ -46,14 +46,14 @@ class FirstFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.buttonFirst.setOnClickListener {
-            val msg=UserMessage(30)
+           /* val msg=UserMessage(30)
             msg.from= UUID(0,1);
             msg.to=UUID(0,0)
             messageHandler.offerMessage(msg)
             while(!messageHandler.Sucess){
                 Toast.makeText(view.context.applicationContext, "Data saved", Toast.LENGTH_LONG).show();
 
-            }
+            }*/
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
     }

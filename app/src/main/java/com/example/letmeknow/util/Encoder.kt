@@ -130,9 +130,8 @@ class Encoder() {
     }
     private fun encrypt(bytes:ByteArray,keyProvider:KeyProvider,mode:String,keyId:String):EncryptedData{
         val cipher = Cipher.getInstance(mode)
-        val key=keyProvider.getKey(keyId )
         val iv=generateIv()
-        cipher.init(Cipher.ENCRYPT_MODE, key,iv)
+        keyProvider.initCipher(cipher,Cipher.ENCRYPT_MODE,keyId,iv)
         val encrypted = cipher.doFinal(bytes)
         return EncryptedData(iv,encrypted)
     }
@@ -140,7 +139,7 @@ class Encoder() {
         val cipher = Cipher.getInstance(mode)
         val key=keyProvider.getKey(keyId )
         val iv=encryptedData.IV
-        cipher.init(Cipher.DECRYPT_MODE,key,iv)
+        keyProvider.initCipher(cipher,Cipher.DECRYPT_MODE,keyId,iv)
         return cipher.doFinal(encryptedData.data)
     }
     private fun hash(bytes:ByteArray,hashType:String):ByteArray{

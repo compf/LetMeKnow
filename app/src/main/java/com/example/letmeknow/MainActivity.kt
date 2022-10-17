@@ -32,9 +32,9 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
         var datagramSocket:DatagramSocket=DatagramSocket()
-        var msg=UserMessage(1)
+        /*var msg=UserMessage(1)
         msg.from= UUID(0,1)
-        msg.to=UUID(0,0)
+        msg.to=UUID(0,0)*/
 
         val policy = ThreadPolicy.Builder().permitAll().build()
 

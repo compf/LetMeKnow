@@ -11,7 +11,7 @@ class MessageClassManager {
 
         init{
             val classes= arrayOf(UserMessage::class,MessageTextMessage::class,AcknowledgementMessage::class,
-            PingMessage::class)
+            PingMessage::class,SignUpMessage::class,SignUpResponseMessage::class)
             for( i in 1 .. classes.size){
                 register(classes[i-1], i.toShort())
             }
