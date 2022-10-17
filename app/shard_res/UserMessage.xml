@@ -1,10 +1,11 @@
 <?xml version="1.0" ?>
-<block mode="plain" id="wholeMessage" sizeType="I" hashType="SHA-256" messageType="UserMesssage" typePrefix="&lt;">
+<block mode="plain" id="wholeMessage" sizeType="I" hashType="SHA-256" messageType="UserMessage" typePrefix="&lt;">
     <single id="messageType" type="H"/>
     <single id="fromH" type="Q"/>
     <single id="fromL" type="Q"/>
     <single id="toH" type="Q"/>
     <single id="toL" type="Q"/>
+    <single id="authentication" type="16b"/>
     <block id="messageBlock" mode="AES/CBC/PKCS5Padding" keyId="CLIENT_CLIENT" sizeType="I" >
         <single id="time" type="Q"/>
         <single id="messageId" type="H"/>
