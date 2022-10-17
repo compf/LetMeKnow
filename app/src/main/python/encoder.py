@@ -1,15 +1,22 @@
 import struct
 from xml.dom.minidom import parse,Node,Element
-import os
+import os,pathlib,sys
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import hashlib
 import cryptography.hazmat.backends
+def find_git_root():
+    curr_path=__file__
+    while not os.path.exists(os.path.join(curr_path,".git")):
+        curr_path=os.path.dirname(curr_path)
+    return curr_path
+
+
 class KeyProvider:
     def get_key(self,key_id:str,mapper):
          pass
 def convert_to_bytes(mapper:dict,class_name:str,key_provider:KeyProvider)->bytearray:
-    BASE_PATH="../../../shard_res/"
+    BASE_PATH= os.path.join(find_git_root(),"app/shared_res/")
     with open(BASE_PATH+class_name+".xml") as f:
         doc=parse(f)
         root=doc.documentElement
@@ -76,7 +83,7 @@ def convert_to_bytes_rec(mapper,root,key_provider,prefix:str):
 def get_block_size():
     return 16
 def convert_to_message(array:bytearray,class_name:str,key_provider:KeyProvider)->dict:
-    BASE_PATH="../../../shard_res/"
+    BASE_PATH= os.path.join(find_git_root(),"app/shared_res/")
     with open(BASE_PATH+class_name+".xml") as f:
         doc=parse(f)
         mapper=dict()

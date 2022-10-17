@@ -11,7 +11,8 @@ sample_data={
     "toL":1,
     "fromH":10,
     "fromL":18,
-    "time":5112
+    "time":5112,
+    "authentication":StubKeyProvider().get_key(None,None)
 }
 sample_data_copy=sample_data.copy()
 class MyTest(unittest.TestCase):
