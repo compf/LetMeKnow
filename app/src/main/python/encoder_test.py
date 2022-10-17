@@ -21,7 +21,7 @@ class MyTest(unittest.TestCase):
         sample_data_copy=encoder.convert_to_message(array,"UserMessage",StubKeyProvider())
         self.assertEqual(sample_data,sample_data_copy)
     def test_decode_from_base64(self):
-        BASE64="AQAKAAAAAAAAABIAAAAAAAAAAQAAAAAAAAABAAAAAAAAAKkfKi6TzBAxiEU0RPMpGK0QAAAAu256jTbjkppnCxAx/7bcuThmboQLi8tqikMekZoKO5RqyFSfgBIHBTSiZx6bOMvN"
+        BASE64="AQAKAAAAAAAAABIAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAABAgMEBQYHCAkKCwwNDg8p8+o29Pb71QY4GkYjbtLKEAAAANY1HQYw07b/vieoWbf9q4zBQ7JAhg3CA7xkKgdO/oEkQ+sbUfh0RphAW9sXxIvTCg=="
         array=bytearray(base64.b64decode(BASE64))
        
         sample_data_copy=encoder.convert_to_message(array,"UserMessage",StubKeyProvider())
