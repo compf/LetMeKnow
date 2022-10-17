@@ -43,6 +43,7 @@ public class ExampleInstrumentedTest {
     }
     class ExtendedStubKeyProvider:StubKeyProvider(){
         private val keyPair=KeyPairGenerator.getInstance("RSA").genKeyPair()
+        private var password="123"
         override fun getKey(keyId: String): Key {
             if(keyId=="SERVER_PUBLIC"){
                return keyPair.public
@@ -50,7 +51,13 @@ public class ExampleInstrumentedTest {
             else if(keyId=="SERVER_PRIVATE"){
                 return keyPair.private
             }
-            else return super.getKey(keyId)
+            else{
+                val pw=password.toByteArray()
+                return SecretKeySpec(Arrays.copyOf(pw,16),"AES")
+            }
+        }
+        public fun setPassword(password:String){
+            this.password=password
         }
 
         override fun initCipher(cipher: Cipher, encryptMode: Int, keyId: String, iv: IvParameterSpec) {
@@ -90,7 +97,8 @@ public class ExampleInstrumentedTest {
         val serverThread=Thread({->
             try {
                 val bytesReceived=server.receive()
-                val signupReceived=encoder.convertToMessage(signUpBytes,appContext,"SignUpMessage",stubKeyProvider)
+                val signupReceived=encoder.convertToMessage(signUpBytes,appContext,"SignUpMessage",stubKeyProvider) as SignUpMessage
+                stubKeyProvider.setPassword(signupReceived.authentication)
                 val signUpResponseMessage=SignUpResponseMessage(userID)
                 val bytesSent= encoder.convertToBytes(signUpResponseMessage,appContext,"SignUpMessageResponse",stubKeyProvider)
                 server.send(bytesSent)
@@ -104,6 +112,7 @@ public class ExampleInstrumentedTest {
         val bytesReceived=client.receive()
         val signUpResponseReceived=encoder.convertToMessage(bytesReceived,appContext,"SignUpMessageResponse",stubKeyProvider ) as SignUpResponseMessage;
         assertEquals(signUpResponseReceived.userId,userID)
+        assertFalse(signUpResponseReceived.userId===userID)
     }
     @Test
     fun testMessageConversion() {
