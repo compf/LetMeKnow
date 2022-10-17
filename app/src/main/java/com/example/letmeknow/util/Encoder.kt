@@ -23,7 +23,7 @@ class Encoder() {
         private val keyProvider:KeyProvider
         constructor( keyProvider: KeyProvider,child:KeyValueMapper):super(child){
             this.keyProvider=keyProvider
-            this.setValue("authentication",keyProvider.getKey("password").encoded)
+            this.setValue("authentication",keyProvider.getKey("password").encoded.decodeToString())
 
         }
     }

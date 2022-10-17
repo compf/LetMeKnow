@@ -8,15 +8,15 @@
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
-            android:theme="@style/Theme.LetMeKnow">
+            android:theme="@style/Theme.LetMeKnow" android:exported="false">
         <activity
                 android:name=".MainActivity"
                 android:label="@string/app_name"
-                android:theme="@style/Theme.LetMeKnow.NoActionBar">
+                android:theme="@style/Theme.LetMeKnow.NoActionBar" android:exported="false" >
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:exported="false" android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:exported="false" android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
