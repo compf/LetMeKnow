@@ -4,6 +4,7 @@ import os,pathlib,sys
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import hashlib
+from typing import Tuple
 import cryptography.hazmat.backends
 def find_git_root():
     curr_path=__file__
@@ -28,10 +29,10 @@ def decrypt(array,iv,key_provider,mode,key_id,mapper):
     key = key_provider.get_key(key_id,mapper)
     mode_splitted=mode.split("/")
     algs=get_encryption_agorithm(mode_splitted,key,iv)
-    array=algs[2].update(array)+algs[2].finalize()
+    array=algs[2].update(bytes(array))+algs[2].finalize()
     cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
     decryptor = cipher.decryptor()
-    return decryptor.update(array) + decryptor.finalize()
+    return decryptor.update(bytes(array)) + decryptor.finalize()
 
 
 def encrypt (array,key_provider,mode,key_id,mapper):
@@ -40,17 +41,25 @@ def encrypt (array,key_provider,mode,key_id,mapper):
     iv = os.urandom(16)
     mode_splitted=mode.split("/")
     algs=get_encryption_agorithm(mode_splitted,key,iv)
-    array=algs[2].update(array)+algs[2].finalize()
+    array=algs[2].update(bytes(array))+algs[2].finalize()
     cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
 
     encryptor = cipher.encryptor()
 
-    return (encryptor.update(array) + encryptor.finalize(),iv)
+    return (encryptor.update(bytes(array)) + encryptor.finalize(),iv)
 
     #decryptor = cipher.decryptor()
 
     #decryptor.update(ct) + decryptor.finalize()
-   
+def get_encyrption_decryption_keyId(ele:Element)->Tuple[str,str]:
+    if ele.hasAttribute("encryptKeyId") and  ele.hasAttribute("decryptKeyId"):
+        return  (ele.getAttribute("encryptKeyId") ,  ele.getAttribute("decryptKeyId"))
+    elif ele.hasAttribute("encryptKeyId"):
+        return (ele.getAttribute("encryptKeyId"),ele.getAttribute("encryptKeyId"))
+    elif ele.hasAttribute("decryptKeyId"):
+        return (ele.getAttribute("decryptKeyId"),ele.getAttribute("decryptKeyId"))
+    else:
+        raise Exception("No encryption or decryption key provided")
 def hash(array,alg):
     lib=hashlib.sha256()
     lib.update(array)
@@ -72,7 +81,8 @@ def convert_to_bytes_rec(mapper,root,key_provider,prefix:str):
         block_bytearray=convert_to_bytes_rec(mapper,ele,key_provider,prefix)
         size_type=ele.getAttribute("sizeType")
         if ele.getAttribute("mode")!="plain":
-            encrypted=encrypt(block_bytearray,key_provider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
+            encryption_key=get_encyrption_decryption_keyId(ele)[0]
+            encrypted=encrypt(block_bytearray,key_provider,ele.getAttribute("mode"),encryption_key,mapper)
             block_bytearray=encrypted[0]
             result+=encrypted[1]
         result+=struct.pack(size_type,len(block_bytearray))
@@ -124,6 +134,7 @@ def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,m
                 raise ValueError("Hash not equal")
         if ele.getAttribute("mode")!="plain":
             curr_offset-=len(block_bytearray)
-            block_bytearray=decrypt(block_bytearray,iv,key_provider,ele.getAttribute("mode"),ele.getAttribute("keyId"),mapper)
+            decryption_key=get_encyrption_decryption_keyId(ele)[1]
+            block_bytearray=decrypt(block_bytearray,iv,key_provider,ele.getAttribute("mode"),decryption_key,mapper)
             array[curr_offset:curr_offset+len(block_bytearray)]=block_bytearray
         convert_to_message_rec(array,curr_offset,key_provider,mapper,ele,prefix)
