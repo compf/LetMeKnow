@@ -37,7 +37,7 @@ class MyCipher:
 class KeyProvider:
     def get_key(self,key_id:str,mapper):
          pass
-    def get_cipher(self):
+    def get_cipher(self,key_id:str):
         return MyCipher()
 def convert_to_bytes(mapper:dict,class_name:str,key_provider:KeyProvider)->bytearray:
     BASE_PATH= os.path.join(find_git_root(),"app/shared/")
@@ -93,7 +93,7 @@ def convert_to_bytes_rec(mapper,root,key_provider,prefix:str):
         if ele.getAttribute("mode")!="plain":
             encryption_key_id=get_encyrption_decryption_keyId(ele)[0]
             key=key_provider.get_key(encryption_key_id,mapper)
-            cipher=key_provider.get_cipher()
+            cipher=key_provider.get_cipher(encryption_key_id)
             encrypted=cipher.encrypt(block_bytearray,ele.getAttribute("mode"),key)
             block_bytearray=encrypted[0]
             result+=encrypted[1]
@@ -115,7 +115,6 @@ def convert_to_message(array:bytearray,class_name:str,key_provider:KeyProvider)-
     return mapper
 def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,mapper:dict,root:Element,prefix:str):
     curr_offset=offset
-    cipher=key_provider.get_cipher()
     format_string=prefix
     for n in root.childNodes:
         if n.nodeType==Node.ELEMENT_NODE and n.tagName=="single":
@@ -129,6 +128,8 @@ def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,m
     curr_offset=offset+struct.calcsize(format_string)
     if len(root.getElementsByTagName("block"))>0:
         ele=root.getElementsByTagName("block")[0]
+        decryption_key_id=get_encyrption_decryption_keyId(ele)[1]
+        cipher=key_provider.get_cipher(decryption_key_id)
         iv=bytearray(cipher.get_block_size())
         size_type=ele.getAttribute("sizeType")
         if ele.getAttribute("mode")!="plain":
@@ -147,7 +148,6 @@ def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,m
                 raise ValueError("Hash not equal")
         if ele.getAttribute("mode")!="plain":
             curr_offset-=len(block_bytearray)
-            decryption_key_id=get_encyrption_decryption_keyId(ele)[1]
             key=key_provider.get_key(decryption_key_id,mapper)
             block_bytearray=cipher.decrypt(block_bytearray,iv,ele.getAttribute("mode"),key)
             array[curr_offset:curr_offset+len(block_bytearray)]=block_bytearray
