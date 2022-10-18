@@ -4,3 +4,9 @@
 [submodule "app/shared_res"]
 	path = app/shared_res
 	url = git@github.com:compf/LetMeKnowShared.git
+[submodule "app/shared_res2"]
+	path = app/shared_res2
+	url = git@github.com:compf/LetMeKnowShared.git
+[submodule "app/shared"]
+	path = app/shared
+	url = git@github.com:compf/LetMeKnowShared.git

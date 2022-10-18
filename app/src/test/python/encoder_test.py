@@ -1,4 +1,11 @@
 import unittest
+import sys,os
+def find_git_root():
+    curr_path=__file__
+    while not os.path.exists(os.path.join(curr_path,".git")):
+        curr_path=os.path.dirname(curr_path)
+    return curr_path
+sys.path.insert(1, os.path.join(find_git_root(),"app/src/main/python/"))
 import encoder
 import base64
 class StubKeyProvider(encoder.KeyProvider):
@@ -26,6 +33,7 @@ class MyTest(unittest.TestCase):
        
         sample_data_copy=encoder.convert_to_message(array,"UserMessage",StubKeyProvider())
         self.assertEqual(sample_data,sample_data_copy)
+        
 
 
 

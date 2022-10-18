@@ -16,7 +16,7 @@ class KeyProvider:
     def get_key(self,key_id:str,mapper):
          pass
 def convert_to_bytes(mapper:dict,class_name:str,key_provider:KeyProvider)->bytearray:
-    BASE_PATH= os.path.join(find_git_root(),"app/shared_res/")
+    BASE_PATH= os.path.join(find_git_root(),"app/shared/")
     with open(BASE_PATH+class_name+".xml") as f:
         doc=parse(f)
         root=doc.documentElement
@@ -83,7 +83,7 @@ def convert_to_bytes_rec(mapper,root,key_provider,prefix:str):
 def get_block_size():
     return 16
 def convert_to_message(array:bytearray,class_name:str,key_provider:KeyProvider)->dict:
-    BASE_PATH= os.path.join(find_git_root(),"app/shared_res/")
+    BASE_PATH= os.path.join(find_git_root(),"app/shared/")
     with open(BASE_PATH+class_name+".xml") as f:
         doc=parse(f)
         mapper=dict()
