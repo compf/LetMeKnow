@@ -13,9 +13,11 @@ def find_git_root():
     return curr_path
 
 class MyCipher:
-    def encrypt (self,array,mode,key):
+    def encrypt (self,array,mode,key_id,key_provider,mapper):
         iv = os.urandom(16)
         mode_splitted=mode.split("/")
+        key=key_provider.get_key(key_id,mapper)
+
         algs=self.get_encryption_agorithm(mode_splitted,key,iv)
         array=algs[2].update(bytes(array))+algs[2].finalize()
         cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
@@ -23,8 +25,9 @@ class MyCipher:
         encryptor = cipher.encryptor()
 
         return (encryptor.update(bytes(array)) + encryptor.finalize(),iv)
-    def decrypt(self,array,iv,mode,key):
+    def decrypt(self,array,iv,mode,key_id,key_provider,mapper):
         mode_splitted=mode.split("/")
+        key=key_provider.get_key(key_id,mapper)
         algs=self.get_encryption_agorithm(mode_splitted,key,iv)
         array=algs[2].update(bytes(array))+algs[2].finalize()
         cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
@@ -47,14 +50,7 @@ def convert_to_bytes(mapper:dict,class_name:str,key_provider:KeyProvider)->bytea
         prefix=root.getAttribute("typePrefix") if root.hasAttribute("typePrefix") else ""
     return convert_to_bytes_rec(mapper,root,key_provider,prefix)
 
-def decrypt(array,iv,key_provider,mode,key_id,mapper):
-    key = key_provider.get_key(key_id,mapper)
-    mode_splitted=mode.split("/")
-    algs=get_encryption_agorithm(mode_splitted,key,iv)
-    array=algs[2].update(bytes(array))+algs[2].finalize()
-    cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
-    decryptor = cipher.decryptor()
-    return decryptor.update(bytes(array)) + decryptor.finalize()
+
 
 
 
@@ -86,15 +82,13 @@ def convert_to_bytes_rec(mapper,root,key_provider,prefix:str):
                 objects.append(mapper[ele.getAttribute("id")])
                 format_string+=ele.getAttribute("type")
     result+=struct.pack(format_string,*objects)
-    if len(root.getElementsByTagName("block"))>0:
-        ele=root.getElementsByTagName("block")[0]
+    for ele in root.getElementsByTagName("block"):
         block_bytearray=convert_to_bytes_rec(mapper,ele,key_provider,prefix)
         size_type=ele.getAttribute("sizeType")
         if ele.getAttribute("mode")!="plain":
             encryption_key_id=get_encyrption_decryption_keyId(ele)[0]
-            key=key_provider.get_key(encryption_key_id,mapper)
             cipher=key_provider.get_cipher(encryption_key_id)
-            encrypted=cipher.encrypt(block_bytearray,ele.getAttribute("mode"),key)
+            encrypted=cipher.encrypt(block_bytearray,ele.getAttribute("mode"),encryption_key_id,key_provider,mapper)
             block_bytearray=encrypted[0]
             result+=encrypted[1]
         result+=struct.pack(size_type,len(block_bytearray))
@@ -126,8 +120,7 @@ def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,m
             mapper[n.getAttribute("id")]=objects[counter]
             counter+=1
     curr_offset=offset+struct.calcsize(format_string)
-    if len(root.getElementsByTagName("block"))>0:
-        ele=root.getElementsByTagName("block")[0]
+    for ele in root.getElementsByTagName("block"):
         decryption_key_id=get_encyrption_decryption_keyId(ele)[1]
         cipher=key_provider.get_cipher(decryption_key_id)
         iv=bytearray(cipher.get_block_size())
@@ -139,16 +132,18 @@ def convert_to_message_rec(array:bytearray,offset:int,key_provider:KeyProvider,m
         curr_offset+=struct.calcsize(size_type)
         block_bytearray=array[curr_offset:curr_offset+size]
         curr_offset+=size
-        if root.hasAttribute("hashType"):
-            hash_bytearray=array[curr_offset:curr_offset+get_hash_size(root.getAttribute("hashType"))]
-            processed_count=curr_offset-offset
-            compare_bytearray=array[offset:curr_offset]
-            hashed=hash(compare_bytearray,root.getAttribute("hashType"))
-            if hashed!=hash_bytearray:
-                raise ValueError("Hash not equal")
+    if root.hasAttribute("hashType"):
+        hash_bytearray=array[curr_offset:curr_offset+get_hash_size(root.getAttribute("hashType"))]
+        processed_count=curr_offset-offset
+        compare_bytearray=array[offset:curr_offset]
+        hashed=hash(compare_bytearray,root.getAttribute("hashType"))
+        hash_bytearray=bytes(hash_bytearray)
+        if hashed!=(hash_bytearray):
+            print(bytes(array))
+            print("hallo",array[curr_offset])
+            raise ValueError("Hash not equal")
         if ele.getAttribute("mode")!="plain":
             curr_offset-=len(block_bytearray)
-            key=key_provider.get_key(decryption_key_id,mapper)
-            block_bytearray=cipher.decrypt(block_bytearray,iv,ele.getAttribute("mode"),key)
+            block_bytearray=cipher.decrypt(block_bytearray,iv,ele.getAttribute("mode"),decryption_key_id,key_provider,mapper)
             array[curr_offset:curr_offset+len(block_bytearray)]=block_bytearray
         convert_to_message_rec(array,curr_offset,key_provider,mapper,ele,prefix)
