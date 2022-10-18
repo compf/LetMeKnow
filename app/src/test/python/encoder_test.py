@@ -73,15 +73,10 @@ class ExtendedCipher(encoder.MyCipher):
 sample_data_copy=sample_data.copy()
 class MyTest(unittest.TestCase):
     def test_data_processing(self):
-        array=encoder.convert_to_bytes(sample_data,"UserMessage",StubKeyProvider())
-        sample_data_copy=encoder.convert_to_message(array,"UserMessage",StubKeyProvider())
+        array=encoder.convert_message_to_xml(sample_data,"UserMessage",StubKeyProvider())
+        sample_data_copy=encoder.convert_xml_to_message(array,"UserMessage",StubKeyProvider())
         self.assertEqual(sample_data,sample_data_copy)
-    def test_decode_from_base64(self):
-        BASE64="AQAKAAAAAAAAABIAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAABAgMEBQYHCAkKCwwNDg8p8+o29Pb71QY4GkYjbtLKEAAAANY1HQYw07b/vieoWbf9q4zBQ7JAhg3CA7xkKgdO/oEkQ+sbUfh0RphAW9sXxIvTCg=="
-        array=bytearray(base64.b64decode(BASE64))
-       
-        sample_data_copy=encoder.convert_to_message(array,"UserMessage",StubKeyProvider())
-        self.assertEqual(sample_data,sample_data_copy)
+ 
     def test_signup(self):
         client=StubServer()
         server=StubServer()
@@ -92,18 +87,18 @@ class MyTest(unittest.TestCase):
         def server_thread_handler():
             signUpData=server.receive()
             key_provider_server=ExtendedKeyProvider()
-            requestMessage=encoder.convert_to_message(signUpData,"SignUpMessage",key_provider_server)
+            requestMessage=encoder.convert_xml_to_message(signUpData,"SignUpMessage",key_provider_server)
             key_provider.password=requestMessage["DECRYPTION_KEY"]
             responseMessage={"messageType":6,"userH":1,"userL":1}
-            bytesToSent=encoder.convert_to_bytes(responseMessage,"SignUpMessageResponse",key_provider_server)
+            bytesToSent=encoder.convert_message_to_xml(responseMessage,"SignUpMessageResponse",key_provider_server)
             server.send(bytesToSent)
         signUpTestData={"messageType":5,"time":18123,"DECRYPTION_KEY":key_provider_client.password,"userName":"compf".ljust(128).encode(),"authentication":"test123".ljust(128).encode()}
         server_thread=threading.Thread(target=server_thread_handler)
-        signupRequestBytes=encoder.convert_to_bytes(signUpTestData,"SignUpMessage",key_provider_client)
+        signupRequestBytes=encoder.convert_message_to_xml(signUpTestData,"SignUpMessage",key_provider_client)
         client.send(signupRequestBytes)
         server_thread.run()
         response_bytes=client.receive()
-        response=encoder.convert_to_message(response_bytes,"SignUpMessageResponse",key_provider_client)
+        response=encoder.convert_xml_to_message(response_bytes,"SignUpMessageResponse",key_provider_client)
         assert response["userL"]==1 and response["userH"]==1
 
 
