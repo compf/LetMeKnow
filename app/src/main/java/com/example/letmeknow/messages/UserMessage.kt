@@ -18,11 +18,11 @@ public open class UserMessage(public var from:UUID=UUID.randomUUID() , public va
     }
     public override fun  setValue(id:String, newValue:Any):Unit{
         when(id){
-            "fromH"->from= UUID(newValue as Long,from.leastSignificantBits)
-            "fromL"->from= UUID(from.mostSignificantBits,newValue as Long)
-            "toH"->to= UUID(newValue as Long,to.leastSignificantBits)
-            "toL"->to= UUID(to.mostSignificantBits,newValue as Long)
-            "messageId"->msgId=newValue as Short
+            "fromH"->from= UUID(newValue.toString().toLong(),from.leastSignificantBits)
+            "fromL"->from= UUID(from.mostSignificantBits,newValue.toString().toLong())
+            "toH"->to= UUID(newValue .toString().toLong(),to.leastSignificantBits)
+            "toL"->to= UUID(to.mostSignificantBits,newValue.toString().toLong())
+            "messageId"->msgId=newValue.toString().toShort()
             else ->super.setValue(id,newValue)
         }
     }

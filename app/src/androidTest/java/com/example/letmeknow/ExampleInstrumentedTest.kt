@@ -9,12 +9,15 @@ import com.example.letmeknow.messages.UserMessage
 import com.example.letmeknow.util.Encoder
 import com.example.letmeknow.util.KeyProvider
 import com.example.letmeknow.util.KeyValueMapper
-
+import com.example.letmeknow.util.SSHKeyConverter
 import org.junit.Test
 import org.junit.runner.RunWith
 
 import org.junit.Assert.*
 import java.lang.Exception
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.ByteBuffer
 import java.security.Key
 import java.security.KeyPairGenerator
 import java.security.PublicKey
@@ -42,14 +45,15 @@ public class ExampleInstrumentedTest {
 
     }
     class ExtendedStubKeyProvider:StubKeyProvider(){
-        private val keyPair=KeyPairGenerator.getInstance("RSA").genKeyPair()
+        private val publicKey=InstrumentationRegistry.getInstrumentation().targetContext.assets.open("id_rsa.pub").use{SSHKeyConverter().parsePublicKey(it)};
+
         private var password="123"
         override fun getKey(keyId: String): Key {
             if(keyId=="SERVER_PUBLIC"){
-               return keyPair.public
+               return publicKey
             }
             else if(keyId=="SERVER_PRIVATE"){
-                return keyPair.private
+                throw SecurityException("Cannot use server private key")
             }
             else{
                 val pw=password.toByteArray()
@@ -84,33 +88,31 @@ public class ExampleInstrumentedTest {
     @Test
     fun testSignUp(){
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val client=StubServer(1)
-        val server=StubServer(1)
+        val url=URL("http://37.221.197.246:1997/")
+        val client= url.openConnection() as HttpURLConnection
+        client.doOutput=true
+        client.setRequestProperty("Testing","true")
+        client.setRequestProperty("Accept-Encoding", "identity");
+
+        val output=client.getOutputStream()
         val userID=UUID(1,1)
-        client.otherSide=server
-        server.otherSide=client
         val stubKeyProvider=ExtendedStubKeyProvider()
         val signUpSent=SignUpMessage("compf","test123")
         val encoder=Encoder()
-        val signUpBytes= encoder.convertToBytes(signUpSent,appContext,"SignUpMessage",stubKeyProvider)
-        client.send(signUpBytes)
-        val serverThread=Thread({->
-            try {
-                val bytesReceived=server.receive()
-                val signupReceived=encoder.convertToMessage(signUpBytes,appContext,"SignUpMessage",stubKeyProvider) as SignUpMessage
-                stubKeyProvider.setPassword(signupReceived.authentication)
-                val signUpResponseMessage=SignUpResponseMessage(userID)
-                val bytesSent= encoder.convertToBytes(signUpResponseMessage,appContext,"SignUpMessageResponse",stubKeyProvider)
-                server.send(bytesSent)
-            }catch (exception:Exception){
-                exception.printStackTrace()
-            }
-
-
-        });
-        serverThread.start()
-        val bytesReceived=client.receive()
-        val signUpResponseReceived=encoder.convertToMessage(bytesReceived,appContext,"SignUpMessageResponse",stubKeyProvider ) as SignUpResponseMessage;
+        val signUpXml= encoder.convertToXml(signUpSent,appContext,"SignUpMessage",stubKeyProvider)
+        //client.setFixedLengthStreamingMode(signUpXml.length)
+        output.write(ByteBuffer.allocate(4).putInt(signUpXml.length).array())
+        output.write(signUpXml.toString().encodeToByteArray())
+        output.flush()
+        val input=client.getInputStream()
+        val lengthBuffer=ByteArray(4)
+       input.read(lengthBuffer)
+        val length=ByteBuffer.wrap(lengthBuffer).getInt()
+        val responseBuffer=ByteArray(length)
+        input.read(responseBuffer)
+        val signUpResponseXml=responseBuffer.decodeToString()
+        val responseMessage=encoder.convertXmlToMessage(signUpResponseXml,appContext ,"SignUpMessageResponse",stubKeyProvider)
+        val signUpResponseReceived=responseMessage.first as SignUpResponseMessage
         assertEquals(signUpResponseReceived.userId,userID)
         assertFalse(signUpResponseReceived.userId===userID)
     }
@@ -123,9 +125,9 @@ public class ExampleInstrumentedTest {
         val msg=UserMessage(UUID(1,1),UUID(10,18),2)
         msg.time=5112
         val keyProvider=StubKeyProvider()
-        val bytes=encoder.convertToBytes(msg,appContext,"UserMessage",keyProvider)
+        val xml=encoder.convertToXml(msg,appContext,"UserMessage",keyProvider)
 
-        val convMessage=encoder.convertToMessage(bytes,appContext,"UserMessage",keyProvider) as UserMessage
+        val convMessage=encoder.convertXmlToMessage(xml,appContext,"UserMessage",keyProvider).first as UserMessage
         assertEquals(convMessage.from,msg.from)
         assertEquals(convMessage.to,msg.to)
         assertEquals(convMessage.time,msg.time)

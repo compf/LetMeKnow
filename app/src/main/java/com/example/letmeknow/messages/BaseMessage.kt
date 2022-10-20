@@ -29,7 +29,7 @@ public  abstract class BaseMessage ():KeyValueMapper {
     override fun setValue(name: String,value:Any): Unit {
          when(name){
             "messageType"->{}
-            "time"->time=value as Long
+            "time"->time=value.toString().toLong()
         }
 
     }
