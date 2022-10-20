@@ -1,5 +1,5 @@
 import struct
-from xml.dom.minidom import parse,Node,Element,parseString
+from xml.dom.minidom import parse,Node,Element,parseString,Text
 import os,pathlib,sys
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -43,6 +43,8 @@ class KeyProvider:
          pass
     def get_cipher(self,key_id:str):
         return MyCipher()
+    def __init__(self) -> None:
+        self.found_keys=dict()
 
 
 
@@ -73,36 +75,42 @@ def convert_message_to_xml(mapper:dict,class_name:str,key_provider:KeyProvider)-
         doc=parse(f)
         root=doc.documentElement
     template=copy.deepcopy(root)
-    convert_message_to_xml_rec(mapper,template,key_provider,root)
+    convert_message_to_xml_rec(mapper,template,key_provider,root,doc)
     root.setAttribute("hash","")
     str_value=root.toxml()
-    hashVal=base64.encodebytes(hash(str_value.encode(),root.getAttribute("hashType"))).decode()
-    print()
-    print("to xml",hashVal,root.toxml())
+    hashVal=base64.b64encode(hash(str_value.encode(),root.getAttribute("hashType"))).decode()
+
+
     root.setAttribute("hash",hashVal)
     return root.toxml()
 def find_matching_ele(template_ele:Element,root:Element)->Element:
     assert template_ele.localName is not None
-    elements=[e for e in root.getElementsByTagName(template_ele.localName) if e.nodeType==Node.ELEMENT_NODE ]
+    elements=[e for e in root.getElementsByTagName(template_ele.localName) if e.nodeType==Node.ELEMENT_NODE and e.getAttribute("id")==template_ele.getAttribute("id") ]
     return elements[0]
 def convert_tostring(value:object,type:str)->str:
     return str(value)
-def convert_message_to_xml_rec(mapper,template,key_provider,root:Element):
+def convert_message_to_xml_rec(mapper,template,key_provider,root:Element,doc):
     is_encrypted=template.getAttribute("mode")!="plain"
     for ele in template.childNodes:
         if ele.nodeType==Node.ELEMENT_NODE:
             matching_ele=find_matching_ele(ele,root)
             if ele.tagName=="single":
-                value=convert_tostring(mapper[ele.getAttribute("id")],ele.getAttribute("type"))
+                if is_cryptography_key(ele.getAttribute("id")):
+                    value=key_provider.get_key(ele.getAttribute("id"),mapper)
+                else:
+                    value=convert_tostring(mapper[ele.getAttribute("id")],ele.getAttribute("type")).encode()
+                matching_ele.setAttribute("len",str(len(value)))
                 if is_encrypted:
                     encryption_key_id=get_encyrption_decryption_keyId(root)[0]
                     cipher=key_provider.get_cipher(encryption_key_id)
-                    encrypted=cipher.encrypt(value.encode(),ele.getAttribute("mode"),encryption_key_id,key_provider,mapper)
-                    value=base64.encodebytes(encrypted[0]).decode()
-                    matching_ele.setAttribute("iv",base64.encodebytes(encrypted[1]).decode())
-                matching_ele.nodeValue=value
+                    encrypted=cipher.encrypt(value,ele.getAttribute("mode"),encryption_key_id,key_provider,mapper)
+                    value=base64.b64encode(encrypted[0]).decode()
+                    matching_ele.setAttribute("iv",base64.b64encode(encrypted[1]).decode())
+                if type(value) is not str:
+                    value=value.decode()
+                matching_ele.appendChild(doc.createTextNode(value))
             elif ele.tagName=="block":
-                convert_message_to_xml_rec(mapper,ele,key_provider,matching_ele)
+                convert_message_to_xml_rec(mapper,ele,key_provider,matching_ele,doc)
     
 def get_block_size():
     return 16
@@ -118,9 +126,7 @@ def convert_xml_to_message(xmlStr:str,class_name:str,key_provider:KeyProvider)->
     hashVal=root.getAttribute("hash")
     root.setAttribute("hash","")
     root_str=root.toxml()
-    compHash=base64.encodebytes(hash(root_str.encode(),root.getAttribute("hashType"))).decode()
-    print()
-    print("from xml",compHash,root.toxml())
+    compHash=base64.b64encode(hash(root_str.encode(),root.getAttribute("hashType"))).decode()
 
     if compHash!=hashVal:
         raise ValueError("Hashes are not equal")
@@ -132,23 +138,36 @@ def parse_str_value(strVal:str,type:str):
         return int(strVal)
     else:
         return float(strVal)
+def is_cryptography_key(id:str):
+    return id=="DECRYPTION_KEY" or id=="USER_PASSWORD"
 def convert_xml_to_message_rec(template:Element,key_provider:KeyProvider,mapper:dict,root:Element):
     is_encrypted=template.getAttribute("mode")!="plain"
 
     for ele in root.childNodes:
         if ele.nodeType==Node.ELEMENT_NODE:
+            matching_ele=find_matching_ele(ele,root)
             if ele.tagName=="single":
-                value=ele.nodeValue
+                value=ele.childNodes[0].data
                 if is_encrypted:
-                    value=base64.decodebytes(ele.nodeValue)
-                    iv=base64.decodebytes(ele.getAttribute("iv"))
+                    value=base64.b64decode(value.encode())
+                    iv=base64.b64decode(ele.getAttribute("iv").encode())
                     decryption_key_id=get_encyrption_decryption_keyId(root)[1]
                     cipher=key_provider.get_cipher(decryption_key_id)
-                    value=cipher.decrypt(value,iv,ele.getAttribute("mode"),decryption_key_id,key_provider,mapper).decode()
+                    value=cipher.decrypt(value,iv,ele.getAttribute("mode"),decryption_key_id,key_provider,mapper)
+                    val_length=int(ele.getAttribute("len"))
+                    value=value[:val_length]
+               
+                if is_cryptography_key(ele.getAttribute("id")):
+                    key_provider.found_keys[ele.getAttribute("id")]=value
+                    mapper[ele.getAttribute("id")]=value
+                else:
+                    if type( value) is not str:
+                        value=value.decode()
                     value=parse_str_value(value,ele.getAttribute("type"))
-                mapper[ele.getAttribute("id")]=value
+                    mapper[ele.getAttribute("id")]=value
+
             elif ele.tagName=="block":
-                convert_xml_to_message_rec(template,key_provider,mapper,ele)
+                convert_xml_to_message_rec(matching_ele,key_provider,mapper,ele)
 
 
     

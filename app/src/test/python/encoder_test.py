@@ -20,7 +20,6 @@ class StubKeyProvider(encoder.KeyProvider):
 class ExtendedKeyProvider(StubKeyProvider):
     def __init__(self) -> None:
         super().__init__()
-        self.password="123"
     def get_cipher(self,key_id):
         if key_id=="SERVER_PUBLIC" or key_id=="SERVER_PRIVATE":
             return ExtendedCipher()
@@ -36,10 +35,8 @@ class ExtendedKeyProvider(StubKeyProvider):
         elif key_id=="SERVER_PUBLIC":
             with open("/home/compf/.ssh/id_rsa.pub","rb") as f:
                 return serialization.load_ssh_public_key(f.read(),backend=cryptography.hazmat.backends.default_backend())
-        elif key_id=="DECRYPTION_KEY":
-            return self.password
         else:
-            return None
+            return self.found_keys[key_id]
 
 sample_data={
     "messageType":1,
@@ -49,7 +46,7 @@ sample_data={
     "fromH":10,
     "fromL":18,
     "time":5112,
-    "authentication":StubKeyProvider().get_key(None,None)
+    "authentication":base64.b64encode(StubKeyProvider().get_key(None,None)).decode()
 }
 class StubServer:
     def __init__(self) -> None:
@@ -83,16 +80,20 @@ class MyTest(unittest.TestCase):
         client.other=server
         server.other=client
         key_provider_client=ExtendedKeyProvider()
-        key_provider_client.password=os.urandom(16)
+        key_provider_client.found_keys["USER_PASSWORD"]="test123".ljust(16).encode()
+        key_provider_client.found_keys["DECRYPTION_KEY"]= os.urandom(16)
+
         def server_thread_handler():
             signUpData=server.receive()
             key_provider_server=ExtendedKeyProvider()
             requestMessage=encoder.convert_xml_to_message(signUpData,"SignUpMessage",key_provider_server)
-            key_provider.password=requestMessage["DECRYPTION_KEY"]
-            responseMessage={"messageType":6,"userH":1,"userL":1}
+            assert requestMessage["USER_PASSWORD"]==b"test123".ljust(16) and requestMessage["userName"]=="compf"
+            key_provider_server.found_keys["USER_PASSWORD"]=requestMessage["USER_PASSWORD"]
+            key_provider_server.found_keys["DECRYPTION_KEY"]=requestMessage["DECRYPTION_KEY"]
+            responseMessage={"messageType":6,"userH":1,"userL":1,"time":60}
             bytesToSent=encoder.convert_message_to_xml(responseMessage,"SignUpMessageResponse",key_provider_server)
             server.send(bytesToSent)
-        signUpTestData={"messageType":5,"time":18123,"DECRYPTION_KEY":key_provider_client.password,"userName":"compf".ljust(128).encode(),"authentication":"test123".ljust(128).encode()}
+        signUpTestData={"messageType":5,"time":18123,"userName":"compf","USER_PASSWORD":"test123"}
         server_thread=threading.Thread(target=server_thread_handler)
         signupRequestBytes=encoder.convert_message_to_xml(signUpTestData,"SignUpMessage",key_provider_client)
         client.send(signupRequestBytes)
