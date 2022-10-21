@@ -1,6 +1,6 @@
 package com.example.letmeknow.util
 
-class StubKeyValueMapper :KeyValueMapper {
+class StubKeyValueMapper : KeyValueMapper {
     override fun getValue(name: String): Any {
         throw IllegalArgumentException("Key not found")
     }
@@ -10,6 +10,6 @@ class StubKeyValueMapper :KeyValueMapper {
     }
 
     override fun getKeys(): Set<String> {
-        return HashSet();
+        return HashSet()
     }
 }

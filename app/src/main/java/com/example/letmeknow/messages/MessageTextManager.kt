@@ -1,10 +1,11 @@
 package com.example.letmeknow.messages
 
 class MessageTextManager private constructor() {
-    companion object{
-        public val  Instance=MessageTextManager()
+    companion object {
+        val Instance = MessageTextManager()
     }
-    fun registerMesseage(msg:String, id:Int){
+
+    fun registerMesseage(msg: String, id: Int) {
 
     }
 

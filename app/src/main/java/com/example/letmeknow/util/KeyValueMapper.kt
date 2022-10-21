@@ -1,11 +1,11 @@
 package com.example.letmeknow.util
 
 interface KeyValueMapper {
-    public fun getValue(name:String):Any;
-    public fun setValue(name:String,value:Any):Unit;
-    public fun getKeys():Set<String>;
-    public fun hasValue(name:String):Boolean{
-        return getKeys().contains(name);
+    fun getValue(name: String): Any
+    fun setValue(name: String, value: Any): Unit
+    fun getKeys(): Set<String>
+    fun hasValue(name: String): Boolean {
+        return getKeys().contains(name)
     }
 
 }

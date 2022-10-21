@@ -1,5 +1,3 @@
 package com.example.letmeknow.messages
 
-class AcknowledgementMessage: BaseMessage() {
-
-}
+class AcknowledgementMessage : BaseMessage()

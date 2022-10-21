@@ -1,5 +1,3 @@
 package com.example.letmeknow.messages
 
-class PingMessage: BaseMessage() {
-
-}
+class PingMessage : BaseMessage()

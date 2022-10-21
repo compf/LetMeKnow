@@ -11,12 +11,8 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.example.letmeknow.databinding.ActivityMainBinding
-import com.example.letmeknow.messages.UserMessage
 import com.google.android.material.snackbar.Snackbar
-import java.net.DatagramPacket
 import java.net.DatagramSocket
-import java.net.InetSocketAddress
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -31,7 +27,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        var datagramSocket:DatagramSocket=DatagramSocket()
+        var datagramSocket: DatagramSocket = DatagramSocket()
         /*var msg=UserMessage(1)
         msg.from= UUID(0,1)
         msg.to=UUID(0,0)*/
@@ -46,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+                .setAction("Action", null).show()
         }
     }
 
