@@ -16,9 +16,7 @@ class MyRequestHandler(http.server.BaseHTTPRequestHandler):
         input=input.decode()
         print(input)
         key_provider=key_providers.AsymetricKeyProvider()
-        requestMessage=encoder.convert_xml_to_message(input,"SignUpMessage",key_provider)
-        #key_provider.found_keys["USER_PASSWORD"]=requestMessage["USER_PASSWORD"]
-        #key_provider.found_keys["DECRYPTION_KEY"]=requestMessage["DECRYPTION_KEY"]
+        requestMessage=encoder.convert_xml_to_message(input,key_provider)
         responseMessage={"messageType":6,"userH":1,"userL":1,"time":60}
         xml_str=encoder.convert_message_to_xml(responseMessage,"SignUpMessageResponse",key_provider)
         self.wfile.write("HTTP/1.1 200 Ok.\n\n".encode())

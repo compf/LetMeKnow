@@ -58,20 +58,20 @@ class MyTest(unittest.TestCase):
         def server_thread_handler():
             signUpData=server.receive()
             key_provider_server=key_providers.AsymetricKeyProvider()
-            requestMessage=encoder.convert_xml_to_message(signUpData,"SignUpMessage",key_provider_server)
+            requestMessage=encoder.convert_xml_to_message(signUpData,key_provider_server)
             assert requestMessage["USER_PASSWORD"]==b"test123".ljust(16) and requestMessage["userName"]=="compf"
             key_provider_server.found_keys["USER_PASSWORD"]=requestMessage["USER_PASSWORD"]
             key_provider_server.found_keys["DECRYPTION_KEY"]=requestMessage["DECRYPTION_KEY"]
             responseMessage={"messageType":6,"userH":1,"userL":1,"time":60}
-            bytesToSent=encoder.convert_message_to_xml(responseMessage,"SignUpMessageResponse",key_provider_server)
-            server.send(bytesToSent)
+            xmlToSend=encoder.convert_message_to_xml(responseMessage,"SignUpMessageResponse",key_provider_server)
+            server.send(xmlToSend)
         signUpTestData={"messageType":5,"time":18123,"userName":"compf","USER_PASSWORD":"test123"}
         server_thread=threading.Thread(target=server_thread_handler)
-        signupRequestBytes=encoder.convert_message_to_xml(signUpTestData,"SignUpMessage",key_provider_client)
-        client.send(signupRequestBytes)
+        signupRequestXml=encoder.convert_message_to_xml(signUpTestData,"SignUpMessage",key_provider_client)
+        client.send(signupRequestXml)
         server_thread.run()
         response_bytes=client.receive()
-        response=encoder.convert_xml_to_message(response_bytes,"SignUpMessageResponse",key_provider_client)
+        response=encoder.convert_xml_to_message(response_bytes,key_provider_client)
         assert response["userL"]==1 and response["userH"]==1
 
 
