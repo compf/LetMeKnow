@@ -1,6 +1,8 @@
 package com.example.letmeknow.util
 
 import android.content.Context
+import android.util.Log
+import android.util.Log.INFO
 import com.example.letmeknow.messages.BaseMessage
 import com.example.letmeknow.messages.MessageClassManager
 import org.w3c.dom.Attr
@@ -70,8 +72,12 @@ class Encoder() {
         val doc = context.assets.open(className + ".xml").use { builder.parse(it) }
         val mapper = AuthenticationInfoMapper(keyProvider, msg)
         convertToXmlRec(msg, doc.documentElement, keyProvider)
+        doc.documentElement.setAttribute("hash","")
 
-        val str: String = elementToString(doc.documentElement)
+        var str: String = elementToString(doc.documentElement)
+        val hash=Base64.getEncoder().encode(this.hash(str.encodeToByteArray(),"SHA-256")).decodeToString()
+        doc.documentElement.setAttribute("hash",hash)
+        str=elementToString(doc.documentElement)
         return str
     }
 
@@ -93,13 +99,16 @@ class Encoder() {
             val ele = root.childNodes.item(i) as Element
             val id = ele.getAttribute("id")
             if (ele.tagName == "single") {
-                var value = if (isCryptographyKey(id))
+                val isCryptoKey=isCryptographyKey(id)
+                val length=if (isCryptoKey ) keyProvider.getKey(id).encoded.size else mapper.getValue(id).toString().length
+                var value = if (isCryptoKey)
                     Base64.getEncoder().encode(keyProvider.getKey(id).encoded).decodeToString()
                 else mapper.getValue(id).toString();
-                ele.setAttribute("len",value.length.toString())
+                ele.setAttribute("len",length.toString())
 
 
                 if (isEncrypted) {
+                    android.util.Log.d("Before encrypted",id +" "+value)
                     val encryptId=getEncryptDecryptId(root).first
                     val encrypted = encrypt(
                         value.encodeToByteArray(),
@@ -109,6 +118,7 @@ class Encoder() {
                     )
                     ele.setAttribute("iv", Base64.getEncoder().encode(encrypted.IV.iv).decodeToString())
                     value = Base64.getEncoder().encode(encrypted.data).decodeToString()
+                    android.util.Log.d("After encrypted",id +" "+value)
                 }
                 ele.appendChild(ele.ownerDocument.createTextNode(value))
 
@@ -268,7 +278,7 @@ private fun convertToMessageRec(
 
 fun generateIv(): IvParameterSpec {
     val iv = ByteArray(16)
-    SecureRandom().nextBytes(iv)
+    //SecureRandom().nextBytes(iv)
     return IvParameterSpec(iv)
 }
 
@@ -280,9 +290,18 @@ private fun encrypt(bytes: ByteArray, keyProvider: KeyProvider, mode: String, ke
     val cipher = Cipher.getInstance(mode)
     val iv = generateIv()
     keyProvider.initCipher(cipher, Cipher.ENCRYPT_MODE, keyId, iv)
-    val encrypted = cipher.doFinal(bytes)
+    var buffer=bytes
+    if(bytes.size % 16!=0){
+        buffer=Arrays.copyOf(bytes,bytes.size+16-bytes.size%16)
+    }
+    val encrypted = cipher.doFinal(buffer)
     return EncryptedData(iv, encrypted)
 }
+    private fun pad(array: ByteArray):ByteArray{
+        val blockSize=16
+        val pad=blockSize-(array.size%blockSize)
+         return Arrays.copyOf(array,array.size+pad)
+    }
 
 private fun decrypt(
     encryptedData: EncryptedData,

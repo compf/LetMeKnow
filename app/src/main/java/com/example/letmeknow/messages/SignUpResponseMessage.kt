@@ -12,8 +12,8 @@ class SignUpResponseMessage(public var userId:UUID=UUID.randomUUID()):BaseMessag
     }
     public override fun  setValue(id:String, newValue:Any):Unit{
         when(id){
-            "userL"->userId= UUID(newValue as Long,userId.leastSignificantBits)
-            "userH"->userId= UUID(userId.mostSignificantBits,newValue as Long)
+            "userL"->userId= UUID(newValue.toString().toLong(),userId.leastSignificantBits)
+            "userH"->userId= UUID(userId.mostSignificantBits,newValue.toString().toLong())
             else ->super.setValue(id,newValue)
         }
     }

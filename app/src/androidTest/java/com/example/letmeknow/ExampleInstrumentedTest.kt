@@ -57,7 +57,8 @@ public class ExampleInstrumentedTest {
             }
             else{
                 val pw=password.toByteArray()
-                return SecretKeySpec(Arrays.copyOf(pw,16),"AES")
+                val spec= SecretKeySpec(Arrays.copyOf(pw,16),"AES")
+                return spec
             }
         }
         public fun setPassword(password:String){
@@ -88,7 +89,7 @@ public class ExampleInstrumentedTest {
     @Test
     fun testSignUp(){
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val url=URL("http://37.221.197.246:1997/")
+        val url=URL("http://37.221.197.246:1998/")
         val client= url.openConnection() as HttpURLConnection
         client.doOutput=true
         client.setRequestProperty("Testing","true")
@@ -97,7 +98,7 @@ public class ExampleInstrumentedTest {
         val output=client.getOutputStream()
         val userID=UUID(1,1)
         val stubKeyProvider=ExtendedStubKeyProvider()
-        val signUpSent=SignUpMessage("compf","test123")
+        val signUpSent=SignUpMessage("compf".padEnd(16, 0.toChar()),"test123".padEnd(16, 0.toChar()))
         val encoder=Encoder()
         val signUpXml= encoder.convertToXml(signUpSent,appContext,"SignUpMessage",stubKeyProvider)
         //client.setFixedLengthStreamingMode(signUpXml.length)
