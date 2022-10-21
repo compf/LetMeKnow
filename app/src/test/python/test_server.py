@@ -14,14 +14,16 @@ class MyRequestHandler(http.server.BaseHTTPRequestHandler):
         print(length)
         input=self.rfile.read(length)
         input=input.decode()
+        print(input)
         key_provider=key_providers.AsymetricKeyProvider()
-        encoder.convert_xml_to_message(input,"SignUpMessage",key_provider)
-
+        requestMessage=encoder.convert_xml_to_message(input,"SignUpMessage",key_provider)
+        #key_provider.found_keys["USER_PASSWORD"]=requestMessage["USER_PASSWORD"]
+        #key_provider.found_keys["DECRYPTION_KEY"]=requestMessage["DECRYPTION_KEY"]
         responseMessage={"messageType":6,"userH":1,"userL":1,"time":60}
         xml_str=encoder.convert_message_to_xml(responseMessage,"SignUpMessageResponse",key_provider)
-        
-        self.write(struct.pack(">i",xml_str))
+        self.wfile.write("HTTP/1.1 200 Ok.\n\n".encode())
+        self.wfile.write(struct.pack(">i",len(xml_str)))
         self.wfile.write(xml_str.encode())
 
-server=http.server.HTTPServer(("0.0.0.0",1997),MyRequestHandler)
+server=http.server.HTTPServer(("0.0.0.0",1998),MyRequestHandler)
 server.serve_forever()

@@ -3,8 +3,9 @@ from  cryptography.hazmat.primitives import serialization
 import cryptography.hazmat.backends
 
 class SymetricKeyProvider(encoder.KeyProvider):
+    
     def get_key(self,key_id: str, mapper):
-        return bytearray(range(16))
+        return self.found_keys[key_id]
 class AsymetricKeyProvider(SymetricKeyProvider):
     def __init__(self) -> None:
         super().__init__()

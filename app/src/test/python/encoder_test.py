@@ -37,6 +37,9 @@ class StubServer:
         return self.queue.get()
 
 sample_data_copy=sample_data.copy()
+class StubKeyProvider(encoder.KeyProvider):
+    def get_key(self,key_id: str, mapper):
+        return bytearray(range(16))
 class MyTest(unittest.TestCase):
     def test_data_processing(self):
         array=encoder.convert_message_to_xml(sample_data,"UserMessage",key_providers.SymetricKeyProvider())

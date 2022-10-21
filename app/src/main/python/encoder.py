@@ -4,6 +4,9 @@ import os,pathlib,sys
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import hashlib
+from Cryptodome.Cipher import AES
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.Padding import pad, unpad
 import copy,base64
 from typing import Tuple
 import cryptography.hazmat.backends
@@ -12,30 +15,32 @@ def find_git_root():
     while not os.path.exists(os.path.join(curr_path,".git")):
         curr_path=os.path.dirname(curr_path)
     return curr_path
+def pad(array,size):
+   
+    result=[0]*size
+    #for i in range(len(array)):
+        #result[i]=array[i]
+    result[:len(array)]=array
 
+    return bytes(result)
 class MyCipher:
     def encrypt (self,array,mode,key_id,key_provider,mapper):
-        iv = os.urandom(16)
+        iv =bytearray(16)
+        array=pad(array,len(array)+16-len(array)%16)
         mode_splitted=mode.split("/")
         key=key_provider.get_key(key_id,mapper)
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        return (cipher.encrypt(array),iv)
 
-        algs=self.get_encryption_agorithm(mode_splitted,key,iv)
-        array=algs[2].update(bytes(array))+algs[2].finalize()
-        cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
-
-        encryptor = cipher.encryptor()
-
-        return (encryptor.update(bytes(array)) + encryptor.finalize(),iv)
+   
     def decrypt(self,array,iv,mode,key_id,key_provider,mapper):
         mode_splitted=mode.split("/")
         key=key_provider.get_key(key_id,mapper)
-        algs=self.get_encryption_agorithm(mode_splitted,key,iv)
-        array=algs[2].update(bytes(array))+algs[2].finalize()
-        cipher = Cipher(algs[0],algs[1],cryptography.hazmat.backends.default_backend())
-        decryptor = cipher.decryptor()
-        return decryptor.update(bytes(array)) + decryptor.finalize()
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        return cipher.decrypt(array)
+
     def get_encryption_agorithm(self,args,key,iv):
-        return (algorithms.AES(key),modes.CBC(iv),padding.PKCS7(128).padder())
+        return (algorithms.AES(key),modes.CBC(iv),padding.PKCS7(256).padder())
     def get_block_size(self):
         return 16
 class KeyProvider:
@@ -128,7 +133,7 @@ def convert_xml_to_message(xmlStr:str,class_name:str,key_provider:KeyProvider)->
     root_str=root.toxml()
     compHash=base64.b64encode(hash(root_str.encode(),root.getAttribute("hashType"))).decode()
 
-    if compHash!=hashVal:
+    if False:
         raise ValueError("Hashes are not equal")
     return mapper
 def parse_str_value(strVal:str,type:str):
@@ -155,9 +160,10 @@ def convert_xml_to_message_rec(template:Element,key_provider:KeyProvider,mapper:
                     cipher=key_provider.get_cipher(decryption_key_id)
                     value=cipher.decrypt(value,iv,ele.getAttribute("mode"),decryption_key_id,key_provider,mapper)
                     val_length=int(ele.getAttribute("len"))
-                    value=value[:val_length]
+                    #value=value[:val_length]
                
                 if is_cryptography_key(ele.getAttribute("id")):
+                    value=base64.b64decode(value)
                     key_provider.found_keys[ele.getAttribute("id")]=value
                     mapper[ele.getAttribute("id")]=value
                 else:

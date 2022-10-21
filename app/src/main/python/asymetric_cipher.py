@@ -12,9 +12,9 @@ class AsymetricCipher(encoder.MyCipher):
         iv = bytearray([0]*16)
         key=key_provider.get_key(key_id,mapper)
 
-        return ( key.encrypt(bytes(array)),iv)
+        return ( key.encrypt(bytes(array),padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()),algorithm=hashes.SHA256(),label=None)),iv)
 
     def decrypt(self,array,iv,mode,key_id,key_provider,mapper):
         iv = bytearray([0]*16)
         key=key_provider.get_key(key_id,mapper)
-        return ( key.decrypt(bytes(array)))
+        return ( key.decrypt(bytes(array),padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()),algorithm=hashes.SHA256(),label=None)))
